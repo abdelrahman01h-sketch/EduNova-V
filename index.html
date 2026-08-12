@@ -278,6 +278,11 @@ button.primary:disabled{ opacity:.7; cursor:not-allowed; transform:none; }
     border-radius:inherit;
   }
 }
+  .loading-logo {
+    width: 70px !important;
+    height: 70px !important;
+    object-fit: contain;
+}
 </style>
 </head>
 <body>
@@ -311,7 +316,7 @@ button.primary:disabled{ opacity:.7; cursor:not-allowed; transform:none; }
 <div class="modal" id="loadingModal">
   <div class="modal-box">
     <div class="icon">
-      <img src="icon.png">
+      <img src="icon.png" class="loading-logo">
     </div>
     <h2 id="loadingTitle">جاري التحقق</h2>
     <p>جاري تحميل الامتحان وتأمين الجلسة...</p>
