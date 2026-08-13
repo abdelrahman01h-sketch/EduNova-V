@@ -61,6 +61,35 @@ body > *{ position:relative; z-index:1; }
 
 ::selection{ background:var(--a2); color:#fff; }
 
+/* ================= TOP BRAND (redesign) ================= */
+.top-brand{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  max-width:1200px;
+  margin:0 auto 18px;
+  padding:4px 6px;
+}
+.top-brand img{
+  width:40px; height:40px;
+  border-radius:12px;
+  object-fit:cover;
+  border:1px solid var(--glass-border);
+  box-shadow:0 6px 16px rgba(0,0,0,0.35);
+}
+.top-brand h1{
+  font-size:17px;
+  font-weight:800;
+  background:var(--gradient);
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.top-brand span{
+  display:block;
+  font-size:11px;
+  color:var(--text-muted);
+  font-weight:600;
+}
+
 /* ================= HEADER ================= */
 .header{
   display:flex;
@@ -729,33 +758,100 @@ font-size:13px;
 
 }
 
+/* ================= CARD ICON / TITLE / GLOW (redesign) ================= */
+.card-icon{
+  width:56px;
+  height:56px;
+  margin:0 auto 12px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:26px;
+  border-radius:16px;
+  background:var(--gradient);
+  box-shadow:0 8px 22px rgba(0,0,0,0.35);
+  position:relative;
+  z-index:2;
+}
+
+.card-title{
+  font-size:13px;
+  font-weight:700;
+  opacity:.85;
+  letter-spacing:.3px;
+  position:relative;
+  z-index:2;
+}
+
+.card-glow{
+  position:absolute;
+  top:50%; left:50%;
+  width:140px; height:140px;
+  transform:translate(-50%,-50%);
+  border-radius:50%;
+  filter:blur(30px);
+  opacity:.35;
+  pointer-events:none;
+  z-index:0;
+  animation:glowPulse 3.5s ease-in-out infinite;
+}
+
+@keyframes glowPulse{
+  0%,100%{ opacity:.25; transform:translate(-50%,-50%) scale(1); }
+  50%{ opacity:.45; transform:translate(-50%,-50%) scale(1.15); }
+}
+
+.card.total .card-icon{ background:linear-gradient(135deg,var(--a3),#6d28d9); }
+.card.total .card-glow{ background:var(--a3); }
+
+.card.percent .card-icon{ background:linear-gradient(135deg,var(--a2),#be185d); }
+.card.percent .card-glow{ background:var(--a2); }
+
+.card.correct .card-icon{ background:linear-gradient(135deg,var(--success),#16a34a); }
+.card.correct .card-glow{ background:var(--success); }
+
+.card.wrong .card-icon{ background:linear-gradient(135deg,var(--danger),#b91c1c); }
+.card.wrong .card-glow{ background:var(--danger); }
+
+.card.blank .card-icon{ background:linear-gradient(135deg,var(--warning),#b45309); }
+.card.blank .card-glow{ background:var(--warning); }
+
 /* Individual Glow */
 
 .card.total{
 
 box-shadow:
-0 0 25px rgba(99,102,241,.18);
+0 0 25px rgba(139,92,246,.18);
 
 }
 
 .card.percent{
 
 box-shadow:
-0 0 25px rgba(6,182,212,.20);
+0 0 25px rgba(236,72,153,.20);
 
 }
 
 .card.correct{
 
 box-shadow:
-0 0 25px rgba(34,197,94,.20);
+0 0 25px rgba(74,222,128,.20);
 
 }
 
 .card.wrong{
 
 box-shadow:
-0 0 25px rgba(239,68,68,.18);
+0 0 25px rgba(248,113,113,.18);
+
+}
+
+.card.blank{
+
+border-color:var(--warning);
+
+box-shadow:
+0 0 25px rgba(251,191,36,.18);
 
 }
 
@@ -2079,6 +2175,14 @@ box-shadow:0 0 35px rgba(100,116,139,.35);
 
 <body>
 
+<div class="top-brand">
+  <img src="icon.png" alt="EduNova">
+  <div>
+    <h1>EduNova</h1>
+    <span>تقرير نتيجة الامتحان</span>
+  </div>
+</div>
+
 <div class="header">
 
   <!-- LEFT: Avatar + Info -->
@@ -2225,6 +2329,24 @@ box-shadow:0 0 35px rgba(100,116,139,.35);
 
 </div>
 
+<div class="card blank">
+
+    <div class="card-glow"></div>
+
+    <div class="card-icon">
+        📭
+    </div>
+
+    <div class="card-title">
+        أسئلة غير محلولة
+    </div>
+
+    <span id="blankQ">0</span>
+
+    <small>Unanswered</small>
+
+</div>
+
 </div>
 
 </section>
@@ -2312,6 +2434,8 @@ const correct = result.correct || 0;
 
 const wrong = result.wrong || 0;
 
+const blank = result.blank || 0;
+
 const total =
 correct +
 wrong +
@@ -2322,6 +2446,8 @@ animateCounter("percent", percent, "%");
 animateCounter("correct", correct);
 
 animateCounter("wrong", wrong);
+
+animateCounter("blankQ", blank);
 
 animateCounter("totalQ", total);
 
