@@ -3,26 +3,63 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>النتيجة النهائية</title>
+<title>النتيجة النهائية - EduNova</title>
+<link rel="icon" href="icon.png">
 
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 
 <style>
-body{
-  font-family:'Cairo',sans-serif;
-  background: linear-gradient(-45deg,#050816,#0b1220,#0f172a,#111827);
-  background-size: 400% 400%;
-  animation: bgMove 12s ease infinite;
-  color:#fff;
-  padding:20px;
+:root{
+  --a1:#F59E0B;   /* amber   */
+  --a2:#EC4899;   /* pink    */
+  --a3:#8B5CF6;   /* violet  */
+  --success:#4ADE80;
+  --danger:#F87171;
+  --warning:#FBBF24;
+  --text:#FFFFFF;
+  --text-muted:rgba(255,255,255,0.68);
+  --glass:rgba(255,255,255,0.09);
+  --glass-strong:rgba(255,255,255,0.16);
+  --glass-border:rgba(255,255,255,0.22);
+  --gradient:linear-gradient(120deg,#F59E0B 0%,#EC4899 50%,#8B5CF6 100%);
+  --danger-gradient:linear-gradient(120deg,#F87171 0%,#EC4899 100%);
+  --mono:'IBM Plex Mono',monospace;
 }
 
-/* ================= BACKGROUND ANIMATION ================= */
-@keyframes bgMove{
-  0%{background-position:0% 50%}
-  50%{background-position:100% 50%}
-  100%{background-position:0% 50%}
+*{ box-sizing:border-box; }
+
+@media (prefers-reduced-motion: reduce){
+  *{ animation-duration:0.001ms !important; transition-duration:0.001ms !important; }
 }
+
+body{
+  font-family:'Cairo',sans-serif;
+  position:relative;
+  min-height:100vh;
+  overflow-x:hidden;
+  background:#0a0714 url('icon.png') center center / cover no-repeat fixed;
+  color:var(--text);
+  padding:20px;
+  -webkit-font-smoothing:antialiased;
+  overscroll-behavior:none;
+}
+
+body::before{
+  content:'';
+  position:fixed; inset:0;
+  background:
+    radial-gradient(circle at 15% 10%, rgba(245,158,11,0.28), transparent 45%),
+    radial-gradient(circle at 90% 15%, rgba(139,92,246,0.30), transparent 45%),
+    radial-gradient(circle at 50% 100%, rgba(236,72,153,0.22), transparent 50%),
+    linear-gradient(180deg, rgba(8,6,18,0.78), rgba(8,6,18,0.88));
+  z-index:0;
+  pointer-events:none;
+}
+
+body > *{ position:relative; z-index:1; }
+
+::selection{ background:var(--a2); color:#fff; }
 
 /* ================= HEADER ================= */
 .header{
@@ -66,7 +103,7 @@ body{
   width:55px;
   height:55px;
   border-radius:50%;
-  background:linear-gradient(135deg,#7c3aed,#06b6d4);
+  background:linear-gradient(135deg,#8B5CF6,#EC4899);
   display:flex;
   align-items:center;
   justify-content:center;
@@ -79,7 +116,7 @@ body{
   font-size:18px;
   font-weight:800;
   margin:0;
-  background:linear-gradient(90deg,#7c3aed,#06b6d4);
+  background:linear-gradient(90deg,#8B5CF6,#EC4899);
   -webkit-background-clip:text;
   color:transparent;
 }
@@ -113,7 +150,7 @@ body{
 .progress-fill{
   height:100%;
   width:0%;
-  background:linear-gradient(90deg,#7c3aed,#06b6d4);
+  background:linear-gradient(90deg,#8B5CF6,#EC4899);
   transition:0.4s ease;
 }
 
@@ -132,8 +169,8 @@ body{
   width:10px;
   height:10px;
   border-radius:50%;
-  background:#22c55e;
-  box-shadow:0 0 10px #22c55e;
+  background:#4ADE80;
+  box-shadow:0 0 10px #4ADE80;
   animation:pulse 1.5s infinite;
 }
 
@@ -169,10 +206,10 @@ body{
 }
 
 /* colors */
-.card.total{border-color:#6366f1}
-.card.percent{border-color:#06b6d4}
-.card.correct{border-color:#22c55e}
-.card.wrong{border-color:#ef4444}
+.card.total{border-color:#8B5CF6}
+.card.percent{border-color:#EC4899}
+.card.correct{border-color:#4ADE80}
+.card.wrong{border-color:#F87171}
 
 /* ================= QUESTIONS ================= */
 .questions{
@@ -229,12 +266,12 @@ body{
 
 /* correct / wrong */
 .correct{
-  background:#22c55e !important;
+  background:#4ADE80 !important;
   color:white;
 }
 
 .wrong{
-  background:#ef4444 !important;
+  background:#F87171 !important;
   color:white;
 }
 
@@ -252,7 +289,17 @@ body{
 }
 
 /* ================= RESPONSIVE ================= */
+@media(max-width:1024px){
+  .stats{
+    grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+  }
+}
+
 @media(max-width:768px){
+  body{
+    padding:12px;
+  }
+
   .header{
     flex-direction:column;
     text-align:center;
@@ -260,10 +307,36 @@ body{
 
   .q-body{
     flex-direction:column;
+    grid-template-columns:1fr !important;
   }
 
   .q-image{
     height:220px;
+  }
+
+  .stats{
+    grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+    gap:14px;
+  }
+
+  .info-row{
+    justify-content:center;
+  }
+}
+
+@media(max-width:480px){
+  .stats{
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+  }
+
+  .q-title{
+    font-size:18px !important;
+    padding:16px !important;
+  }
+
+  .user-info h2{
+    font-size:22px !important;
   }
 }
 
@@ -325,7 +398,7 @@ body{
   width:60px;
   height:60px;
   border-radius:50%;
-  background: linear-gradient(135deg,#7c3aed,#06b6d4);
+  background: linear-gradient(135deg,#8B5CF6,#EC4899);
   display:flex;
   align-items:center;
   justify-content:center;
@@ -338,7 +411,7 @@ body{
   font-size:18px;
   font-weight:800;
   margin:0;
-  background: linear-gradient(90deg,#7c3aed,#06b6d4);
+  background: linear-gradient(90deg,#8B5CF6,#EC4899);
   -webkit-background-clip:text;
   color:transparent;
 }
@@ -350,7 +423,7 @@ body{
 }
 
 .user-info span{
-  color:#06b6d4;
+  color:#EC4899;
   font-weight:700;
 }
 
@@ -362,7 +435,7 @@ body{
   border-radius:12px;
   cursor:pointer;
 
-  background: linear-gradient(135deg,#6366f1,#06b6d4);
+  background: linear-gradient(135deg,#8B5CF6,#EC4899);
   color:white;
   font-weight:700;
   font-size:13px;
@@ -405,7 +478,7 @@ body{
 .progress-fill{
   height:100%;
   width:0%;
-  background:linear-gradient(90deg,#7c3aed,#06b6d4,#22c55e);
+  background:linear-gradient(90deg,#8B5CF6,#EC4899,#4ADE80);
   transition: width 1s ease;
   box-shadow:0 0 20px rgba(6,182,212,0.4);
 }
@@ -452,7 +525,7 @@ body{
 
 .status-fire {
   background: rgba(239, 68, 68, 0.15);
-  border: 1px solid #ef4444;
+  border: 1px solid #F87171;
   box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
   animation: shake 0.6s infinite;
 }
@@ -520,10 +593,10 @@ background:
 
 linear-gradient(
 120deg,
-#7c3aed,
-#06b6d4,
-#22c55e,
-#7c3aed);
+#8B5CF6,
+#EC4899,
+#4ADE80,
+#8B5CF6);
 
 background-size:300%;
 
@@ -610,7 +683,7 @@ font-size:34px;
 border-radius:50%;
 
 background:
-linear-gradient(135deg,#7c3aed,#06b6d4);
+linear-gradient(135deg,#8B5CF6,#EC4899);
 
 box-shadow:
 0 0 25px rgba(6,182,212,.45);
@@ -627,12 +700,14 @@ display:block;
 
 margin-top:10px;
 
+font-family:var(--mono);
+
 font-size:46px;
 
 font-weight:900;
 
 background:
-linear-gradient(90deg,#ffffff,#06b6d4);
+var(--gradient);
 
 -webkit-background-clip:text;
 
@@ -682,6 +757,18 @@ box-shadow:
 box-shadow:
 0 0 25px rgba(239,68,68,.18);
 
+}
+
+/* Badge */
+.badge{
+  display:inline-block;
+  margin-top:10px;
+  padding:6px 16px;
+  border-radius:99px;
+  font-size:12.5px;
+  font-weight:800;
+  color:#fff;
+  box-shadow:0 6px 16px rgba(0,0,0,0.3);
 }
 
 /* Floating Animation */
@@ -768,8 +855,8 @@ background:
 
 linear-gradient(
 135deg,
-#7c3aed,
-#06b6d4);
+#8B5CF6,
+#EC4899);
 
 box-shadow:
 
@@ -822,7 +909,7 @@ background:
 linear-gradient(
 90deg,
 #fff,
-#06b6d4);
+#EC4899);
 
 -webkit-background-clip:text;
 
@@ -1042,11 +1129,11 @@ background:
 linear-gradient(
 90deg,
 
-#7c3aed,
+#8B5CF6,
 
-#06b6d4,
+#EC4899,
 
-#22c55e);
+#4ADE80);
 
 box-shadow:
 
@@ -1081,7 +1168,7 @@ height:14px;
 
 box-shadow:
 
-0 0 18px #22c55e;
+0 0 18px #4ADE80;
 
 }
 /*======================================
@@ -1192,8 +1279,8 @@ font-size:42px;
 background:
 linear-gradient(
 135deg,
-#7c3aed,
-#06b6d4);
+#8B5CF6,
+#EC4899);
 
 box-shadow:
 0 0 30px rgba(124,58,237,.45);
@@ -1219,10 +1306,10 @@ border-radius:inherit;
 background:
 linear-gradient(
 120deg,
-#7c3aed,
-#06b6d4,
-#22c55e,
-#7c3aed);
+#8B5CF6,
+#EC4899,
+#4ADE80,
+#8B5CF6);
 
 background-size:300%;
 
@@ -1258,7 +1345,7 @@ background:
 linear-gradient(
 90deg,
 #ffffff,
-#06b6d4);
+#EC4899);
 
 -webkit-background-clip:text;
 
@@ -1272,7 +1359,7 @@ margin-top:10px;
 
 font-size:15px;
 
-color:#cbd5e1;
+color:rgba(255,255,255,.75);
 
 line-height:1.8;
 
@@ -1391,8 +1478,8 @@ border-radius:20px;
 
 background:linear-gradient(
 90deg,
-#7c3aed,
-#06b6d4);
+#8B5CF6,
+#EC4899);
 
 box-shadow:
 0 0 15px rgba(6,182,212,.35);
@@ -1435,7 +1522,7 @@ border:1px solid rgba(255,255,255,.08);
 
 backdrop-filter:blur(10px);
 
-color:#06b6d4;
+color:#EC4899;
 
 }
 
@@ -1461,7 +1548,7 @@ margin-top:4px;
 
 font-size:13px;
 
-color:#94a3b8;
+color:var(--text-muted);
 
 }
 
@@ -1517,13 +1604,13 @@ background:
 linear-gradient(
 120deg,
 
-#7c3aed,
+#8B5CF6,
 
-#06b6d4,
+#EC4899,
 
-#22c55e,
+#4ADE80,
 
-#7c3aed);
+#8B5CF6);
 
 background-size:300%;
 
@@ -1623,8 +1710,8 @@ background:
 
 linear-gradient(
 135deg,
-#7c3aed,
-#06b6d4);
+#8B5CF6,
+#EC4899);
 
 font-weight:700;
 
@@ -1648,13 +1735,13 @@ font-weight:bold;
 
 .correct-status{
 
-background:#22c55e;
+background:#4ADE80;
 
 }
 
 .wrong-status{
 
-background:#ef4444;
+background:#F87171;
 
 }
 
@@ -1742,8 +1829,8 @@ background:
 
 linear-gradient(
 135deg,
-#16a34a,
-#22c55e)!important;
+#22c55e,
+#4ADE80)!important;
 
 }
 
@@ -1755,8 +1842,8 @@ background:
 
 linear-gradient(
 135deg,
-#dc2626,
-#ef4444)!important;
+#B91C1C,
+#F87171)!important;
 
 }
 
@@ -1814,8 +1901,8 @@ background:
 
 linear-gradient(
 135deg,
-#7c3aed,
-#06b6d4);
+#8B5CF6,
+#EC4899);
 
 font-size:15px;
 
@@ -1858,7 +1945,7 @@ font-size:15px;
 }
 
 .q-card.success{
-    border:2px solid #22c55e;
+    border:2px solid #4ADE80;
     box-shadow:
         0 0 20px rgba(34,197,94,.3),
         0 0 50px rgba(34,197,94,.15);
@@ -1880,7 +1967,7 @@ opacity:1;
 }
 
 .q-card.danger{
-border:2px solid #ef4444;
+border:2px solid #F87171;
 box-shadow:
 0 0 18px rgba(239,68,68,.3),
 0 0 40px rgba(239,68,68,.15);
@@ -1914,7 +2001,7 @@ box-shadow:0 0 35px rgba(100,116,139,.35);
 }
 
 .question-state.success{
-    color:#22c55e;
+    color:#4ADE80;
     font-weight:700;
     display:flex;
     align-items:center;
@@ -1938,11 +2025,11 @@ box-shadow:0 0 35px rgba(100,116,139,.35);
 
 @keyframes shine{
 0%,100%{opacity:1;text-shadow:0 0 0 transparent;}
-50%{text-shadow:0 0 18px #22c55e;}
+50%{text-shadow:0 0 18px #4ADE80;}
 }
 
 .question-state.danger{
-    color:#ef4444;
+    color:#F87171;
     font-weight:700;
     display:flex;
     align-items:center;
@@ -1973,7 +2060,7 @@ box-shadow:0 0 35px rgba(100,116,139,.35);
 }
 
 .question-state.blank{
-    color:#94a3b8;
+    color:var(--text-muted);
     display:flex;
     gap:8px;
     align-items:center;
@@ -1998,7 +2085,7 @@ box-shadow:0 0 35px rgba(100,116,139,.35);
 <div class="user-box">
 
     <div class="avatar">
-        👤
+        <img src="icon.png" alt="EduNova" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
     </div>
 
     <div class="user-info">
@@ -2475,7 +2562,7 @@ function updateBadge(percent){
 
         badge.innerHTML="🏆 Elite";
 
-        badge.style.background="#f59e0b";
+        badge.style.background="#F59E0B";
 
     }
 
@@ -2483,7 +2570,7 @@ function updateBadge(percent){
 
         badge.innerHTML="🥇 ممتاز";
 
-        badge.style.background="#22c55e";
+        badge.style.background="#4ADE80";
 
     }
 
@@ -2491,7 +2578,7 @@ function updateBadge(percent){
 
         badge.innerHTML="🥈 جيد جداً";
 
-        badge.style.background="#06b6d4";
+        badge.style.background="#EC4899";
 
     }
 
@@ -2499,7 +2586,7 @@ function updateBadge(percent){
 
         badge.innerHTML="🥉 جيد";
 
-        badge.style.background="#6366f1";
+        badge.style.background="#8B5CF6";
 
     }
 
@@ -2507,7 +2594,7 @@ function updateBadge(percent){
 
         badge.innerHTML="📘 يحتاج مراجعة";
 
-        badge.style.background="#ef4444";
+        badge.style.background="#F87171";
 
     }
 
