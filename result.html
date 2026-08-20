@@ -2170,6 +2170,57 @@ box-shadow:0 0 35px rgba(100,116,139,.35);
 0%,100%{transform:translateY(0);}
 50%{transform:translateY(-5px);}
 }
+/* ================= ESSAY RESULT DISPLAY ================= */
+.badge-pill{
+  display:inline-flex; align-items:center; gap:6px;
+  padding:4px 12px; border-radius:999px; font-size:11.5px; font-weight:800;
+  background:rgba(245,158,11,0.18); color:#F59E0B;
+}
+.q-card.essay.pending{ border-color:rgba(139,92,246,0.55); }
+.q-card.essay.review{ border-color:rgba(251,191,36,0.55); }
+.q-card.essay.failed{ border-color:rgba(248,113,113,0.55); }
+
+.essay-answer-box{
+  background:rgba(255,255,255,0.06); border-radius:14px; padding:14px 16px;
+  font-size:14px; line-height:1.8; white-space:pre-wrap; margin:10px 0;
+}
+.essay-score-row{ display:flex; align-items:center; justify-content:space-between; margin:10px 0; flex-wrap:wrap; gap:8px; }
+.essay-score{ font-family:var(--mono); font-weight:800; font-size:18px; }
+.essay-status-pill{
+  display:inline-flex; align-items:center; gap:6px; padding:5px 13px; border-radius:999px;
+  font-size:12px; font-weight:800;
+}
+.essay-status-pill.graded{ background:rgba(74,222,128,0.18); color:#4ADE80; }
+.essay-status-pill.review{ background:rgba(251,191,36,0.18); color:#FBBF24; }
+.essay-status-pill.pending{ background:rgba(139,92,246,0.2); color:#c4b5fd; }
+.essay-status-pill.failed{ background:rgba(248,113,113,0.2); color:#F87171; }
+
+.rubric-detail-btn{
+  margin-top:6px; width:100%; padding:9px; border-radius:12px; cursor:pointer;
+  background:rgba(255,255,255,0.08); border:1px solid var(--glass-border); color:var(--text);
+  font-weight:700; font-size:12.5px;
+}
+.rubric-detail-box{ display:none; margin-top:10px; }
+.rubric-detail-row{
+  display:flex; justify-content:space-between; align-items:center;
+  padding:8px 12px; border-radius:10px; background:rgba(255,255,255,0.05);
+  margin-bottom:6px; font-size:12.5px;
+}
+.rubric-detail-total{
+  display:flex; justify-content:space-between; padding:9px 12px; margin-top:4px;
+  font-weight:800; border-top:1px solid var(--glass-border); font-size:13px;
+}
+.essay-ai-note{
+  margin-top:10px; font-size:12.5px; color:var(--text-muted);
+  background:rgba(139,92,246,0.08); border-radius:12px; padding:10px 12px; line-height:1.7;
+}
+
+.pending-final-banner{
+  display:flex; align-items:center; gap:14px; padding:18px 20px; border-radius:20px;
+  background:rgba(139,92,246,0.14); border:1px solid rgba(139,92,246,0.4);
+  margin-bottom:20px; font-size:13.5px; line-height:1.8;
+}
+.pending-final-banner .pf-icon{ font-size:28px; }
 </style>
 </head>
 
@@ -2367,6 +2418,11 @@ box-shadow:0 0 35px rgba(100,116,139,.35);
 
 </div>
 
+<div class="pending-final-banner" id="pendingFinalBanner" style="display:none;">
+  <div class="pf-icon">🤖</div>
+  <div class="pf-text">جاري تحليل إجاباتك المقالية...</div>
+</div>
+
 <div class="questions" id="questions"></div>
 
 <script type="module">
@@ -2374,7 +2430,9 @@ box-shadow:0 0 35px rgba(100,116,139,.35);
 import {
   getFirestore,
   collection,
-  getDocs
+  getDocs,
+  doc,
+  onSnapshot
 } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
 
 /* ================= FIREBASE ================= */
@@ -2403,6 +2461,82 @@ window.toggleAnalysis = function(btn){
   box.style.display = box.style.display === "block" ? "none" : "block";
 };
 
+/* ================= RUBRIC DETAIL TOGGLE ================= */
+window.toggleRubricDetail = function(btn){
+  const box = btn.nextElementSibling;
+  if(!box) return;
+  box.style.display = box.style.display === "block" ? "none" : "block";
+};
+
+/* ================= ESSAY QUESTION CARD (rule #30) ================= */
+function renderEssayCard(container, q, questionId, essayResult, index) {
+  const r = essayResult || {};
+  const status = r.gradingStatus || "pending";
+
+  let stateCls = "pending", pillCls = "pending", pillText = "🔵 جاري التصحيح";
+  if (status === "graded") { stateCls = ""; pillCls = "graded"; pillText = "🟢 تم التصحيح بالذكاء الاصطناعي"; }
+  else if (status === "review_required") { stateCls = "review"; pillCls = "review"; pillText = "🟡 يحتاج مراجعة"; }
+  else if (status === "teacher_reviewed") { stateCls = ""; pillCls = "graded"; pillText = "🟢 روجعت بواسطة المدرس"; }
+  else if (status === "failed") { stateCls = "failed"; pillCls = "failed"; pillText = "🔴 تعذر التصحيح الآلي"; }
+  else { stateCls = "pending"; pillCls = "pending"; pillText = "🔵 جاري التصحيح"; }
+
+  const finalScore = r.finalScore ?? r.aiScore ?? null;
+  const maxScore = r.maxScore ?? q.points ?? 0;
+  const answerText = r.studentAnswer || "لم تتم الإجابة";
+  const criteria = r.criteria || [];
+
+  const scoreHTML = finalScore !== null
+    ? `<div class="essay-score">${finalScore} / ${maxScore}</div>`
+    : `<div class="essay-score">— / ${maxScore}</div>`;
+
+  const confidenceHTML = (status === "graded" || status === "review_required") && r.confidence != null
+    ? `<div style="font-size:12px;color:var(--text-muted);">الثقة: ${Math.round(r.confidence * 100)}%</div>`
+    : "";
+
+  const rubricRowsHTML = criteria.map(c => {
+    const icon = c.status === "full" ? "✓" : c.status === "partial" ? "🟡" : "✗";
+    return `<div class="rubric-detail-row"><span>${icon} ${c.criterionTitle}</span><span>${c.score} / ${c.maxScore}</span></div>`;
+  }).join("");
+
+  const detailHTML = criteria.length ? `
+    <button class="rubric-detail-btn" onclick="toggleRubricDetail(this)">📖 عرض تفاصيل التصحيح</button>
+    <div class="rubric-detail-box">
+      ${rubricRowsHTML}
+      <div class="rubric-detail-total"><span>المجموع</span><span>${finalScore} / ${maxScore}</span></div>
+      ${r.aiSummary ? `<div class="essay-ai-note">💡 <b>تحليل AI:</b> ${r.aiSummary}</div>` : ""}
+    </div>
+  ` : (status === "failed"
+      ? `<div class="essay-ai-note">⚠️ تعذر التصحيح الآلي لهذا السؤال. تم حفظ إجابتك وسيتم تصحيحها يدويًا أو إعادة المحاولة من لوحة المدير.</div>`
+      : `<div class="essay-ai-note">جاري تحليل إجابتك وفق معايير التصحيح...</div>`);
+
+  const card = document.createElement("div");
+  card.className = `q-card essay ${stateCls}`;
+  card.innerHTML = `
+    <div class="q-header">
+      <div class="question-number">السؤال ${index + 1}</div>
+      <div class="badge-pill">✍️ سؤال مقالي</div>
+    </div>
+    <div class="q-title">${q.text || "سؤال"}</div>
+    <div class="q-body">
+      <div style="font-size:12.5px;color:var(--text-muted);margin-bottom:4px;">إجابتك:</div>
+      <div class="essay-answer-box">${escapeHtmlResult(answerText)}</div>
+      <div class="essay-score-row">
+        ${scoreHTML}
+        <span class="essay-status-pill ${pillCls}">${pillText}</span>
+      </div>
+      ${confidenceHTML}
+      ${detailHTML}
+    </div>
+  `;
+  container.appendChild(card);
+}
+
+function escapeHtmlResult(str) {
+  return String(str)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
 /* ================= LOAD RESULT ================= */
 async function loadResult(){
 
@@ -2426,9 +2560,17 @@ async function loadResult(){
 
     const examName = result.examName || "—";
     const answers = result.answers || {};
+    const hasEssay = !!result.hasEssay;
 
     /* ================= HEADER INFO ================= */
-      const percent = result.percent || 0;
+    /* rule #51/#58: while essays exist and aren't all graded yet, don't
+       present a misleading partial percentage as the final result. */
+    const gradingDone = !hasEssay || result.examGradingStatus === "graded"
+      || result.examGradingStatus === "review_required";
+
+    const percent = hasEssay
+      ? (gradingDone ? (result.percent ?? 0) : null)
+      : (result.percent || 0);
 
 const correct = result.correct || 0;
 
@@ -2441,7 +2583,22 @@ correct +
 wrong +
 (result.blank || 0);
 
-animateCounter("percent", percent, "%");
+const pendingBanner = document.getElementById("pendingFinalBanner");
+
+if (hasEssay && !gradingDone) {
+  animateCounter("percent", 0, "%");
+  document.getElementById("percent").innerText = "…";
+  if (pendingBanner) {
+    pendingBanner.style.display = "flex";
+    const gradedCount = result.essayTotalPoints != null && result.essayEarnedPoints != null
+      ? "جاري التقييم..." : "جاري التقييم...";
+    pendingBanner.querySelector(".pf-text").innerHTML =
+      `⏳ <b>النتيجة النهائية قيد استكمال التصحيح</b><br>الأسئلة المقالية جاري تقييمها بواسطة الذكاء الاصطناعي — سيتم تحديث النتيجة تلقائيًا فور الانتهاء.`;
+  }
+} else {
+  animateCounter("percent", percent || 0, "%");
+  if (pendingBanner) pendingBanner.style.display = "none";
+}
 
 animateCounter("correct", correct);
 
@@ -2451,14 +2608,29 @@ animateCounter("blankQ", blank);
 
 animateCounter("totalQ", total);
 
-updateBadge(percent);
+updateBadge(hasEssay && !gradingDone ? 0 : (percent || 0));
 
     /* ================= PROGRESS ================= */
     const progress = document.getElementById("progressFill");
     if(progress){
       setTimeout(()=>{
-        progress.style.width = (result.percent || 0) + "%";
+        progress.style.width = (hasEssay && !gradingDone ? 0 : (percent || 0)) + "%";
       },300);
+    }
+
+    /* ================= LIVE UPDATE WHILE ESSAYS ARE GRADING =================
+       rule #50: poll safely via a Firestore listener instead of a fake
+       progress bar — once the backend finishes grading, this listener
+       re-runs loadResult() so the final percentage appears automatically. */
+    if (hasEssay && !gradingDone && !window.__resultListenerAttached) {
+      window.__resultListenerAttached = true;
+      const attemptRef = doc(db, "students", studentId, "exams", examName);
+      onSnapshot(attemptRef, snap => {
+        const d = snap.data();
+        if (d && (d.examGradingStatus === "graded" || d.examGradingStatus === "review_required")) {
+          loadResult();
+        }
+      });
     }
 
     /* ================= STATUS ================= */
@@ -2504,6 +2676,15 @@ updateBadge(percent);
       collection(db,"exams",examDoc.id,"questions")
     );
 
+    /* ================= ESSAY RESULTS (rubric breakdown, scores) ================= */
+    let essayResultsMap = {};
+    if (hasEssay) {
+      const essaySnap = await getDocs(
+        collection(db,"students",studentId,"exams",examName,"essayResults")
+      );
+      essaySnap.forEach(d => { essayResultsMap[d.id] = d.data(); });
+    }
+
     const container = document.getElementById("questions");
     container.innerHTML = "";
 
@@ -2513,6 +2694,12 @@ updateBadge(percent);
 
       const q = docSnap.data();
       const userAnswer = answers[i];
+
+      if (q.type === "essay") {
+        renderEssayCard(container, q, docSnap.id, essayResultsMap[docSnap.id], i);
+        i++;
+        return;
+      }
 
       const card = document.createElement("div");
       if(userAnswer === undefined){
