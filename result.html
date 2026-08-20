@@ -2230,7 +2230,7 @@ box-shadow:0 0 35px rgba(100,116,139,.35);
   <img src="icon.png" alt="EduNova">
   <div>
     <h1>EduNova</h1>
-    <span>تقرير نتيجة الامتحان</span>
+    <span>📊 نتيجتك في الامتحان</span>
   </div>
 </div>
 
@@ -2297,7 +2297,7 @@ box-shadow:0 0 35px rgba(100,116,139,.35);
         <span class="stats-icon">📊</span>
 
         <div>
-            <h2>ملخص النتيجة</h2>
+            <h2>يلا نشوف عملت إيه 👀</h2>
             <p>إحصائيات أداء الطالب في الامتحان</p>
         </div>
 
@@ -2315,7 +2315,7 @@ box-shadow:0 0 35px rgba(100,116,139,.35);
     </div>
 
     <div class="card-title">
-        إجمالي الأسئلة
+        مجموع الأسئلة
     </div>
 
     <span id="totalQ">0</span>
@@ -2353,7 +2353,7 @@ box-shadow:0 0 35px rgba(100,116,139,.35);
     </div>
 
     <div class="card-title">
-        الإجابات الصحيحة
+        الصح ✅
     </div>
 
     <span id="correct">0</span>
@@ -2371,7 +2371,7 @@ box-shadow:0 0 35px rgba(100,116,139,.35);
     </div>
 
     <div class="card-title">
-        الإجابات الخاطئة
+        الغلط ❌
     </div>
 
     <span id="wrong">0</span>
@@ -2389,7 +2389,7 @@ box-shadow:0 0 35px rgba(100,116,139,.35);
     </div>
 
     <div class="card-title">
-        أسئلة غير محلولة
+        اللي ماحلتهاش 🤷
     </div>
 
     <span id="blankQ">0</span>
@@ -2420,7 +2420,7 @@ box-shadow:0 0 35px rgba(100,116,139,.35);
 
 <div class="pending-final-banner" id="pendingFinalBanner" style="display:none;">
   <div class="pf-icon">🤖</div>
-  <div class="pf-text">جاري تحليل إجاباتك المقالية...</div>
+  <div class="pf-text">بنحلل إجاباتك المقالية دلوقتي... 🤖</div>
 </div>
 
 <div class="questions" id="questions"></div>
@@ -2473,16 +2473,17 @@ function renderEssayCard(container, q, questionId, essayResult, index) {
   const r = essayResult || {};
   const status = r.gradingStatus || "pending";
 
-  let stateCls = "pending", pillCls = "pending", pillText = "🔵 جاري التصحيح";
-  if (status === "graded") { stateCls = ""; pillCls = "graded"; pillText = "🟢 تم التصحيح بالذكاء الاصطناعي"; }
-  else if (status === "review_required") { stateCls = "review"; pillCls = "review"; pillText = "🟡 يحتاج مراجعة"; }
-  else if (status === "teacher_reviewed") { stateCls = ""; pillCls = "graded"; pillText = "🟢 روجعت بواسطة المدرس"; }
-  else if (status === "failed") { stateCls = "failed"; pillCls = "failed"; pillText = "🔴 تعذر التصحيح الآلي"; }
-  else { stateCls = "pending"; pillCls = "pending"; pillText = "🔵 جاري التصحيح"; }
+  let stateCls = "pending", pillCls = "pending", pillText = "🔵 جاري التصحيح... ⏳";
+  if (status === "graded") { stateCls = ""; pillCls = "graded"; pillText = "🟢 اتصححت بالذكاء الاصطناعي 🤖"; }
+  else if (status === "review_required" && r.gradingMethod === "manual") { stateCls = "review"; pillCls = "review"; pillText = "🖐 المدرس هيصححها بنفسه"; }
+  else if (status === "review_required") { stateCls = "review"; pillCls = "review"; pillText = "🟡 محتاجة مراجعة سريعة من المدرس"; }
+  else if (status === "teacher_reviewed") { stateCls = ""; pillCls = "graded"; pillText = "🟢 راجعها المدرس بنفسه ✅"; }
+  else if (status === "failed") { stateCls = "failed"; pillCls = "failed"; pillText = "🔴 حصل عطل بسيط في التصحيح"; }
+  else { stateCls = "pending"; pillCls = "pending"; pillText = "🔵 جاري التصحيح... ⏳"; }
 
   const finalScore = r.finalScore ?? r.aiScore ?? null;
   const maxScore = r.maxScore ?? q.points ?? 0;
-  const answerText = r.studentAnswer || "لم تتم الإجابة";
+  const answerText = r.studentAnswer || "معملتش أي إجابة 🤷";
   const criteria = r.criteria || [];
 
   const scoreHTML = finalScore !== null
@@ -2499,15 +2500,15 @@ function renderEssayCard(container, q, questionId, essayResult, index) {
   }).join("");
 
   const detailHTML = criteria.length ? `
-    <button class="rubric-detail-btn" onclick="toggleRubricDetail(this)">📖 عرض تفاصيل التصحيح</button>
+    <button class="rubric-detail-btn" onclick="toggleRubricDetail(this)">📖 عايز تشوف التفاصيل؟</button>
     <div class="rubric-detail-box">
       ${rubricRowsHTML}
       <div class="rubric-detail-total"><span>المجموع</span><span>${finalScore} / ${maxScore}</span></div>
       ${r.aiSummary ? `<div class="essay-ai-note">💡 <b>تحليل AI:</b> ${r.aiSummary}</div>` : ""}
     </div>
   ` : (status === "failed"
-      ? `<div class="essay-ai-note">⚠️ تعذر التصحيح الآلي لهذا السؤال. تم حفظ إجابتك وسيتم تصحيحها يدويًا أو إعادة المحاولة من لوحة المدير.</div>`
-      : `<div class="essay-ai-note">جاري تحليل إجابتك وفق معايير التصحيح...</div>`);
+      ? `<div class="essay-ai-note">⚠️ حصل عطل بسيط والسؤال ده متصححش لسه، بس متقلقش إجابتك محفوظة وهتتصحح يدوي أو هنعيد المحاولة.</div>`
+      : `<div class="essay-ai-note">بنحلل إجابتك على معايير التصحيح... ثواني وهنخلص ⏳</div>`);
 
   const card = document.createElement("div");
   card.className = `q-card essay ${stateCls}`;
@@ -2562,11 +2563,31 @@ async function loadResult(){
     const answers = result.answers || {};
     const hasEssay = !!result.hasEssay;
 
+    /* Fetch essay results once, early — used both for the pending banner
+       message below and for the per-question cards further down. */
+    let essayResultsMap = {};
+    if (hasEssay) {
+      const essaySnap = await getDocs(
+        collection(db,"students",studentId,"exams",examName,"essayResults")
+      );
+      essaySnap.forEach(d => { essayResultsMap[d.id] = d.data(); });
+    }
+    const essayResultsList = Object.values(essayResultsMap);
+    const anyAwaitingManual = essayResultsList.some(r =>
+      r.gradingMethod === "manual" && (r.finalScore === null || r.finalScore === undefined)
+    );
+
     /* ================= HEADER INFO ================= */
     /* rule #51/#58: while essays exist and aren't all graded yet, don't
-       present a misleading partial percentage as the final result. */
-    const gradingDone = !hasEssay || result.examGradingStatus === "graded"
-      || result.examGradingStatus === "review_required";
+       present a misleading partial percentage as the final result.
+       We key this off the actual `percent` field rather than the status
+       string — the backend (recomputeExamTotals) only ever writes a
+       non-null percent once every essay has a real finalScore, whether
+       that essay was AI-graded or graded manually by the teacher. This
+       avoids the ambiguity of "review_required" meaning two different
+       things (AI already scored it vs. a manual question with no score
+       yet at all). */
+    const gradingDone = !hasEssay || (result.percent !== null && result.percent !== undefined);
 
     const percent = hasEssay
       ? (gradingDone ? (result.percent ?? 0) : null)
@@ -2590,10 +2611,10 @@ if (hasEssay && !gradingDone) {
   document.getElementById("percent").innerText = "…";
   if (pendingBanner) {
     pendingBanner.style.display = "flex";
-    const gradedCount = result.essayTotalPoints != null && result.essayEarnedPoints != null
-      ? "جاري التقييم..." : "جاري التقييم...";
-    pendingBanner.querySelector(".pf-text").innerHTML =
-      `⏳ <b>النتيجة النهائية قيد استكمال التصحيح</b><br>الأسئلة المقالية جاري تقييمها بواسطة الذكاء الاصطناعي — سيتم تحديث النتيجة تلقائيًا فور الانتهاء.`;
+    pendingBanner.querySelector(".pf-icon").innerText = anyAwaitingManual ? "🧑‍🏫" : "🤖";
+    pendingBanner.querySelector(".pf-text").innerHTML = anyAwaitingManual
+      ? `⏳ <b>لسه شوية وهتشوف نتيجتك النهائية</b><br>فيه سؤال مقالي المدرس هيصححه بنفسه — النتيجة هتتحدث لوحدها أول ما يخلص، مش محتاج تعمل حاجة.`
+      : `⏳ <b>لسه شوية وهتشوف نتيجتك النهائية</b><br>الأسئلة المقالية بتتقيّم دلوقتي بواسطة الذكاء الاصطناعي — النتيجة هتتحدث لوحدها أول ما نخلص، مش محتاج تعمل حاجة.`;
   }
 } else {
   animateCounter("percent", percent || 0, "%");
@@ -2627,7 +2648,7 @@ updateBadge(hasEssay && !gradingDone ? 0 : (percent || 0));
       const attemptRef = doc(db, "students", studentId, "exams", examName);
       onSnapshot(attemptRef, snap => {
         const d = snap.data();
-        if (d && (d.examGradingStatus === "graded" || d.examGradingStatus === "review_required")) {
+        if (d && d.percent !== null && d.percent !== undefined) {
           loadResult();
         }
       });
@@ -2637,7 +2658,7 @@ updateBadge(hasEssay && !gradingDone ? 0 : (percent || 0));
     const statusBox = document.getElementById("statusBox");
     const statusText = document.getElementById("statusText");
 
-    let reason = result.exitReason || "تم تسليم الامتحان بنجاح";
+    let reason = result.exitReason || "تمام، سلّمت الامتحان بنجاح 🎉";
 
     if(statusText) statusText.innerText = reason;
 
@@ -2676,14 +2697,8 @@ updateBadge(hasEssay && !gradingDone ? 0 : (percent || 0));
       collection(db,"exams",examDoc.id,"questions")
     );
 
-    /* ================= ESSAY RESULTS (rubric breakdown, scores) ================= */
-    let essayResultsMap = {};
-    if (hasEssay) {
-      const essaySnap = await getDocs(
-        collection(db,"students",studentId,"exams",examName,"essayResults")
-      );
-      essaySnap.forEach(d => { essayResultsMap[d.id] = d.data(); });
-    }
+    // essayResultsMap was already fetched earlier (used for the pending
+    // banner above) — reused here for the per-question breakdown cards.
 
     const container = document.getElementById("questions");
     container.innerHTML = "";
@@ -2781,7 +2796,7 @@ userAnswer!==undefined
 ?
 q.answers[userAnswer]
 :
-"لم تتم الإجابة"
+"معملتش إجابة"
 }
 
 </div>
@@ -2792,7 +2807,7 @@ q.analysis
 `
 <button class="analysis-btn"
 onclick="toggleAnalysis(this)">
-📖 عرض التحليل
+📖 عايز تعرف ليه؟
 </button>
 
 <div class="analysis-box">
@@ -2918,4 +2933,4 @@ loadResult();
 </script>
 
 </body>
-</html>
+  </html>
