@@ -304,10 +304,10 @@ button.primary:disabled{ opacity:.7; cursor:not-allowed; transform:none; }
   </div>
   <div class="brand-name">EduNova</div>
   <div class="brand-sub">EXAM ACCESS · V.2.0</div>
-  <h3>تسجيل الدخول</h3>
+  <h3>يلا بينا تسجل دخولك 🚀</h3>
 
-  <input id="codeInput" placeholder="أدخل الكود">
-  <button class="primary" id="loginBtn">دخول</button>
+  <input id="codeInput" placeholder="اكتب الكود بتاعك هنا 🔑">
+  <button class="primary" id="loginBtn">يلا بينا! 🚀</button>
 
   <div class="msg" id="msg"></div>
 </div>
@@ -318,8 +318,8 @@ button.primary:disabled{ opacity:.7; cursor:not-allowed; transform:none; }
     <div class="icon">
       <img src="icon.png" class="loading-logo">
     </div>
-    <h2 id="loadingTitle">جاري التحقق</h2>
-    <p>جاري تحميل الامتحان وتأمين الجلسة...</p>
+    <h2 id="loadingTitle">لحظة واحدة بس... ⏳</h2>
+    <p>بنجهزلك الامتحان وبنأمّن جلستك... 🔒✨</p>
     <div class="wave-loader"><span></span><span></span><span></span><span></span><span></span></div>
   </div>
 </div>
@@ -328,9 +328,9 @@ button.primary:disabled{ opacity:.7; cursor:not-allowed; transform:none; }
 <div class="modal" id="popup">
   <div class="modal-box">
     <div class="icon" id="popupIcon">⚠️</div>
-    <h2 id="popupTitle">رسالة</h2>
+    <h2 id="popupTitle">استنى شوية 👋</h2>
     <p id="popupMsg">...</p>
-    <button id="popupBtn">حسناً</button>
+    <button id="popupBtn">تمام ✅</button>
   </div>
 </div>
 
@@ -381,10 +381,10 @@ function showPopup(type, message){
 
   popup.classList.add("show");
 
-  if (type === "error_code"){ icon.innerText = "❌"; title.innerText = "كود غير صحيح"; }
-  else if (type === "already"){ icon.innerText = "⚠️"; title.innerText = "تنبيه"; }
+  if (type === "error_code"){ icon.innerText = "❌"; title.innerText = "الكود مش مظبوط 😅"; }
+  else if (type === "already"){ icon.innerText = "⚠️"; title.innerText = "خد بالك 👋"; }
   else if (type === "error"){ icon.innerText = "🔥"; title.innerText = "حدث خطأ"; }
-  else if (type === "empty"){ icon.innerText = "⌨️"; title.innerText = "تنبيه"; }
+  else if (type === "empty"){ icon.innerText = "⌨️"; title.innerText = "استنى بس 😄"; }
 
   msg.innerText = message;
 
@@ -397,11 +397,11 @@ loginBtn.onclick = async function () {
   const code = codeInput.value.trim();
 
   if (!code) {
-    showPopup("empty", "من فضلك أدخل الكود أولاً قبل المتابعة");
+    showPopup("empty", "اكتب الكود الأول يا بطل 😄");
     return;
   }
 
-  showLoading("جاري التحقق");
+  showLoading("بنتأكد منك... 🔍");
   loginBtn.disabled = true;
   loginBtn.innerText = "جاري التحميل...";
 
@@ -413,8 +413,8 @@ loginBtn.onclick = async function () {
     if (snap.empty) {
       hideLoading();
       loginBtn.disabled = false;
-      loginBtn.innerText = "دخول";
-      showPopup("error_code", "الكود الذي أدخلته غير موجود");
+      loginBtn.innerText = "يلا بينا! 🚀";
+      showPopup("error_code", "الكود ده مش موجود عندنا 🤔 تأكد منه وجرب تاني");
       return;
     }
 
@@ -429,21 +429,29 @@ loginBtn.onclick = async function () {
     if (examCheck.exists() && examCheck.data().used === true) {
       hideLoading();
       loginBtn.disabled = false;
-      loginBtn.innerText = "دخول";
-      showPopup("already", "لقد قمت بتسجيل الدخول من قبل");
+      loginBtn.innerText = "يلا بينا! 🚀";
+      showPopup("already", "إنت داخل قبل كده يا نجم! 😅 مينفعش تدخل مرتين");
       return;
     }
+
+    /* توليد رمز جلسة عشوائي يُستخدم لاحقًا للتحقق من هوية الطالب
+       عند استدعاء Cloud Functions (تصحيح المقالي) لأن الطالب لا يملك
+       حساب Firebase Authentication حقيقي */
+    const sessionToken =
+      (crypto?.randomUUID && crypto.randomUUID()) ||
+      (Date.now().toString(36) + Math.random().toString(36).slice(2));
 
     localStorage.setItem("studentId", studentId);
     localStorage.setItem("studentName", student.name);
     localStorage.setItem("studentCode", student.code);
+    localStorage.setItem("studentSessionToken", sessionToken);
 
     await setDoc(
       doc(db, "students", studentId, "meta", "login"),
-      { used: true, time: Date.now() }
+      { used: true, time: Date.now(), sessionToken }
     );
 
-    showLoading("أهلاً " + student.name);
+    showLoading("أهلاً بيك يا " + student.name + " 🎉");
 
     setTimeout(() => {
       window.location.href = "welcome.html";
@@ -453,8 +461,1430 @@ loginBtn.onclick = async function () {
     console.error(err);
     hideLoading();
     loginBtn.disabled = false;
-    loginBtn.innerText = "دخول";
-    showPopup("error", "حدث خطأ أثناء تسجيل الدخول");
+    loginBtn.innerText = "يلا بينا! 🚀";
+    showPopup("error", "حصلت مشكلة بسيطة، جرب تاني كمان شوية 🙏");
+  }
+};
+
+codeInput.addEventListener("keydown", e => {
+  if (e.key === "Enter") loginBtn.click();
+});
+</script>
+
+</body>
+</html><!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>تسجيل الدخول - EduNova</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --a1:#F59E0B;   /* amber   */
+  --a2:#EC4899;   /* pink    */
+  --a3:#8B5CF6;   /* violet  */
+  --success:#4ADE80;
+  --danger:#F87171;
+  --warning:#FBBF24;
+  --text:#FFFFFF;
+  --text-muted:rgba(255,255,255,0.68);
+  --glass:rgba(255,255,255,0.09);
+  --glass-strong:rgba(255,255,255,0.16);
+  --glass-border:rgba(255,255,255,0.22);
+  --gradient:linear-gradient(120deg,#F59E0B 0%,#EC4899 50%,#8B5CF6 100%);
+  --mono:'IBM Plex Mono',monospace;
+  --blur:22px;
+}
+
+*{ margin:0; padding:0; box-sizing:border-box; font-family:'Cairo',sans-serif; }
+
+@media (prefers-reduced-motion: reduce){
+  *{ animation-duration:0.001ms !important; transition-duration:0.001ms !important; }
+}
+
+html,body{ min-height:100vh; color:var(--text); -webkit-font-smoothing:antialiased; }
+
+/* ================= FIXED BACKGROUND (same identity as dashboard) ================= */
+body{
+  position:relative;
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:24px;
+  background:#0a0714 url('icon.png') center center / cover no-repeat fixed;
+}
+
+body::before{
+  content:'';
+  position:fixed; inset:0;
+  background:
+    radial-gradient(circle at 15% 10%, rgba(245,158,11,0.28), transparent 45%),
+    radial-gradient(circle at 90% 15%, rgba(139,92,246,0.30), transparent 45%),
+    radial-gradient(circle at 50% 100%, rgba(236,72,153,0.22), transparent 50%),
+    linear-gradient(180deg, rgba(8,6,18,0.78), rgba(8,6,18,0.88));
+  z-index:0;
+  pointer-events:none;
+}
+
+::selection{ background:var(--a2); color:#fff; }
+
+/* ================= TOP BRAND ================= */
+.top-header{
+  position:fixed;
+  top:16px; left:16px; right:16px;
+  height:64px;
+  border-radius:22px;
+  background:var(--glass);
+  backdrop-filter:blur(var(--blur)) saturate(160%);
+  -webkit-backdrop-filter:blur(var(--blur)) saturate(160%);
+  border:1px solid var(--glass-border);
+  display:flex;
+  align-items:center;
+  padding:0 20px;
+  z-index:500;
+  box-shadow:0 8px 32px rgba(0,0,0,0.35);
+}
+
+.developer{ display:flex; align-items:center; gap:12px; }
+.developer img{
+  width:38px;height:38px;border-radius:12px;object-fit:cover;
+  border:1px solid var(--glass-border);
+}
+.developer h2{
+  font-size:15px;font-weight:800;
+  background:var(--gradient);
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.developer span{ font-size:11px; color:var(--text-muted); font-weight:600; }
+
+/* ================= CARD ================= */
+.card{
+  position:relative;
+  z-index:1;
+  width:380px;
+  max-width:100%;
+  padding:32px 28px;
+  border-radius:26px;
+  background:var(--glass);
+  backdrop-filter:blur(var(--blur)) saturate(160%);
+  -webkit-backdrop-filter:blur(var(--blur)) saturate(160%);
+  border:1px solid var(--glass-border);
+  text-align:center;
+  box-shadow:0 20px 60px rgba(0,0,0,0.45), 0 0 40px rgba(236,72,153,0.12);
+  animation:pop .4s ease;
+}
+
+.card::before{
+  content:'';
+  position:absolute; inset:0;
+  border-radius:inherit;
+  background:linear-gradient(135deg, rgba(255,255,255,0.20), rgba(255,255,255,0) 45%);
+  pointer-events:none;
+}
+
+@keyframes pop{
+  from{ opacity:0; transform:translateY(18px) scale(.96); }
+  to{ opacity:1; transform:translateY(0) scale(1); }
+}
+
+.hero-icon{
+  font-size:40px;
+  margin-bottom:6px;
+  filter:drop-shadow(0 0 14px rgba(236,72,153,0.35));
+  z-index:1; position:relative;
+}
+
+/* Mobile identity banner: hidden on desktop, shown on mobile instead of the lock icon */
+.card-visual{ display:none; }
+
+.brand-name{
+  font-size:22px; font-weight:800;
+  background:var(--gradient);
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+  z-index:1; position:relative;
+}
+
+.brand-sub{
+  font-size:12.5px; color:var(--text-muted); font-weight:600;
+  margin-top:4px; margin-bottom:6px;
+  font-family:var(--mono);
+  z-index:1; position:relative;
+}
+
+.card h3{
+  font-size:16px; font-weight:800;
+  margin-top:14px; margin-bottom:18px;
+  z-index:1; position:relative;
+}
+
+/* ================= INPUT ================= */
+input{
+  width:100%; padding:13px 15px; margin-bottom:14px;
+  background:rgba(255,255,255,0.08);
+  backdrop-filter:blur(10px);
+  border:1px solid var(--glass-border);
+  border-radius:14px;
+  color:var(--text);
+  font-family:var(--mono);
+  font-size:14px;
+  text-align:center;
+  letter-spacing:2px;
+  transition:.2s ease;
+  z-index:1; position:relative;
+}
+input::placeholder{ color:var(--text-muted); font-family:'Cairo',sans-serif; letter-spacing:normal; }
+input:focus{
+  outline:none; border-color:var(--a3);
+  box-shadow:0 0 0 3px rgba(139,92,246,0.25);
+}
+
+/* ================= BUTTON ================= */
+button.primary{
+  width:100%;
+  background:var(--gradient);
+  border:1px solid rgba(255,255,255,0.35);
+  padding:13px 22px; border-radius:16px;
+  color:#fff; font-weight:700; font-size:14.5px; cursor:pointer;
+  box-shadow:0 10px 26px rgba(236,72,153,0.32);
+  transition:.2s ease;
+  z-index:1; position:relative;
+}
+button.primary:hover{ transform:translateY(-3px); }
+button.primary:active{ transform:scale(0.98); }
+button.primary:focus-visible{ outline:2px solid #fff; outline-offset:2px; }
+button.primary:disabled{ opacity:.7; cursor:not-allowed; transform:none; }
+
+.msg{ margin-top:14px; font-size:13px; font-weight:700; z-index:1; position:relative; }
+.msg.success{ color:var(--success); }
+.msg.error{ color:var(--danger); }
+
+/* ================= MODALS (loading / alerts) ================= */
+.modal{
+  position:fixed; inset:0;
+  background:rgba(5,3,12,0.6);
+  backdrop-filter:blur(6px);
+  display:none; align-items:center; justify-content:center;
+  z-index:99999; padding:20px;
+}
+.modal.show{ display:flex; }
+
+.modal-box{
+  position:relative;
+  width:320px; max-width:100%; border-radius:26px; padding:28px;
+  text-align:center;
+  background:var(--glass);
+  backdrop-filter:blur(var(--blur)) saturate(160%);
+  -webkit-backdrop-filter:blur(var(--blur)) saturate(160%);
+  border:1px solid var(--glass-border);
+  box-shadow:0 0 40px rgba(236,72,153,0.3), 0 20px 60px rgba(0,0,0,0.5);
+  animation:pop .25s ease;
+}
+.modal-box::before{
+  content:'';
+  position:absolute; inset:0;
+  border-radius:inherit;
+  background:linear-gradient(135deg, rgba(255,255,255,0.20), rgba(255,255,255,0) 45%);
+  pointer-events:none;
+}
+.modal-box .icon{ font-size:38px; margin-bottom:10px; z-index:1; position:relative; }
+.modal-box h2{ font-size:17px; font-weight:800; margin-bottom:10px; z-index:1; position:relative; }
+.modal-box p{ font-size:13.5px; color:var(--text-muted); margin-bottom:18px; line-height:1.6; z-index:1; position:relative; }
+.modal-box button{
+  padding:11px 20px; border:1px solid rgba(255,255,255,0.35); border-radius:14px;
+  cursor:pointer; background:var(--gradient); color:#fff; font-weight:700; font-size:13px;
+  z-index:1; position:relative;
+}
+
+/* Loading modal specific */
+.wave-loader{
+  display:flex; justify-content:center; align-items:flex-end; gap:8px;
+  height:34px; margin:16px 0 6px;
+  z-index:1; position:relative;
+}
+.wave-loader span{
+  width:9px; height:9px; border-radius:50%;
+  background:var(--gradient);
+  animation:wave 1s infinite ease-in-out;
+  box-shadow:0 0 10px rgba(236,72,153,0.4);
+}
+.wave-loader span:nth-child(2){ animation-delay:.1s; }
+.wave-loader span:nth-child(3){ animation-delay:.2s; }
+.wave-loader span:nth-child(4){ animation-delay:.3s; }
+.wave-loader span:nth-child(5){ animation-delay:.4s; }
+@keyframes wave{
+  0%,100%{ transform:translateY(0) scale(1); opacity:.5; }
+  50%{ transform:translateY(-10px) scale(1.25); opacity:1; }
+}
+
+.hidden{ display:none !important; }
+
+/* ================= RESPONSIVE ================= */
+@media (max-width:480px){
+  .top-header{ top:10px; left:10px; right:10px; height:58px; border-radius:18px; }
+  .developer span{ display:none; }
+  .card{ padding:26px 20px; border-radius:22px; overflow:hidden; }
+
+  /* هوية icon.png ظاهرة كخلفية للكارت بدل أيقونة القفل */
+  .hero-icon{ display:none; }
+
+  .card-visual{
+    display:block;
+    width:calc(100% + 40px);
+    height:170px;
+    margin:-26px -20px 18px -20px;
+    border-radius:22px 22px 0 0;
+    background:
+      linear-gradient(180deg, rgba(8,6,18,0.10) 0%, rgba(8,6,18,0.55) 65%, rgba(8,6,18,0.92) 100%),
+      url('icon.png') center 30% / cover no-repeat;
+    box-shadow:0 10px 30px rgba(0,0,0,0.35);
+    position:relative;
+  }
+
+  .card-visual::after{
+    content:'';
+    position:absolute; inset:0;
+    background:linear-gradient(135deg, rgba(255,255,255,0.16), rgba(255,255,255,0) 45%);
+    border-radius:inherit;
+  }
+}
+  .loading-logo {
+    width: 130px !important;
+    height: 130px !important;
+    object-fit: contain;
+}
+</style>
+</head>
+<body>
+
+<header class="top-header">
+  <div class="developer">
+    <img src="icon.png" alt="EduNova">
+    <div>
+      <h2>EduNova</h2>
+      <span>Developed By Abdelrahman Mohamed</span>
+    </div>
+  </div>
+</header>
+
+<div class="card">
+  <div class="card-visual"></div>
+  <div class="hero-icon">
+   🚀
+  </div>
+  <div class="brand-name">EduNova</div>
+  <div class="brand-sub">EXAM ACCESS · V.2.0</div>
+  <h3>يلا بينا تسجل دخولك 🚀</h3>
+
+  <input id="codeInput" placeholder="اكتب الكود بتاعك هنا 🔑">
+  <button class="primary" id="loginBtn">يلا بينا! 🚀</button>
+
+  <div class="msg" id="msg"></div>
+</div>
+
+<!-- LOADING MODAL -->
+<div class="modal" id="loadingModal">
+  <div class="modal-box">
+    <div class="icon">
+      <img src="icon.png" class="loading-logo">
+    </div>
+    <h2 id="loadingTitle">لحظة واحدة بس... ⏳</h2>
+    <p>بنجهزلك الامتحان وبنأمّن جلستك... 🔒✨</p>
+    <div class="wave-loader"><span></span><span></span><span></span><span></span><span></span></div>
+  </div>
+</div>
+
+<!-- ALERT MODAL -->
+<div class="modal" id="popup">
+  <div class="modal-box">
+    <div class="icon" id="popupIcon">⚠️</div>
+    <h2 id="popupTitle">استنى شوية 👋</h2>
+    <p id="popupMsg">...</p>
+    <button id="popupBtn">تمام ✅</button>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
+import {
+  getFirestore,
+  collection,
+  getDocs,
+  query,
+  where,
+  doc,
+  getDoc,
+  setDoc
+} from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
+
+/* ================= FIREBASE ================= */
+const firebaseConfig = {
+  apiKey: "AIzaSyB6_HkPcbAhyZG8joikJr_kPK-6UACxldg",
+  authDomain: "plat-form-97b8d.firebaseapp.com",
+  projectId: "plat-form-97b8d",
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+/* ================= ELEMENTS ================= */
+const loginBtn = document.getElementById("loginBtn");
+const codeInput = document.getElementById("codeInput");
+const loadingModal = document.getElementById("loadingModal");
+const loadingTitle = document.getElementById("loadingTitle");
+
+/* ================= LOADING MODAL ================= */
+function showLoading(text){
+  loadingTitle.innerText = text;
+  loadingModal.classList.add("show");
+}
+function hideLoading(){
+  loadingModal.classList.remove("show");
+}
+
+/* ================= ALERT POPUP ================= */
+function showPopup(type, message){
+  const popup = document.getElementById("popup");
+  const icon = document.getElementById("popupIcon");
+  const title = document.getElementById("popupTitle");
+  const msg = document.getElementById("popupMsg");
+
+  popup.classList.add("show");
+
+  if (type === "error_code"){ icon.innerText = "❌"; title.innerText = "الكود مش مظبوط 😅"; }
+  else if (type === "already"){ icon.innerText = "⚠️"; title.innerText = "خد بالك 👋"; }
+  else if (type === "error"){ icon.innerText = "🔥"; title.innerText = "حدث خطأ"; }
+  else if (type === "empty"){ icon.innerText = "⌨️"; title.innerText = "استنى بس 😄"; }
+
+  msg.innerText = message;
+
+  document.getElementById("popupBtn").onclick = () => popup.classList.remove("show");
+}
+
+/* ================= LOGIN ================= */
+loginBtn.onclick = async function () {
+
+  const code = codeInput.value.trim();
+
+  if (!code) {
+    showPopup("empty", "اكتب الكود الأول يا بطل 😄");
+    return;
+  }
+
+  showLoading("بنتأكد منك... 🔍");
+  loginBtn.disabled = true;
+  loginBtn.innerText = "جاري التحميل...";
+
+  try {
+
+    const q = query(collection(db, "students"), where("code", "==", code));
+    const snap = await getDocs(q);
+
+    if (snap.empty) {
+      hideLoading();
+      loginBtn.disabled = false;
+      loginBtn.innerText = "يلا بينا! 🚀";
+      showPopup("error_code", "الكود ده مش موجود عندنا 🤔 تأكد منه وجرب تاني");
+      return;
+    }
+
+    const docData = snap.docs[0];
+    const student = docData.data();
+    const studentId = docData.id;
+
+    const examCheck = await getDoc(
+      doc(db, "students", studentId, "meta", "login")
+    );
+
+    if (examCheck.exists() && examCheck.data().used === true) {
+      hideLoading();
+      loginBtn.disabled = false;
+      loginBtn.innerText = "يلا بينا! 🚀";
+      showPopup("already", "إنت داخل قبل كده يا نجم! 😅 مينفعش تدخل مرتين");
+      return;
+    }
+
+    /* توليد رمز جلسة عشوائي يُستخدم لاحقًا للتحقق من هوية الطالب
+       عند استدعاء Cloud Functions (تصحيح المقالي) لأن الطالب لا يملك
+       حساب Firebase Authentication حقيقي */
+    const sessionToken =
+      (crypto?.randomUUID && crypto.randomUUID()) ||
+      (Date.now().toString(36) + Math.random().toString(36).slice(2));
+
+    localStorage.setItem("studentId", studentId);
+    localStorage.setItem("studentName", student.name);
+    localStorage.setItem("studentCode", student.code);
+    localStorage.setItem("studentSessionToken", sessionToken);
+
+    await setDoc(
+      doc(db, "students", studentId, "meta", "login"),
+      { used: true, time: Date.now(), sessionToken }
+    );
+
+    showLoading("أهلاً بيك يا " + student.name + " 🎉");
+
+    setTimeout(() => {
+      window.location.href = "welcome.html";
+    }, 1500);
+
+  } catch (err) {
+    console.error(err);
+    hideLoading();
+    loginBtn.disabled = false;
+    loginBtn.innerText = "يلا بينا! 🚀";
+    showPopup("error", "حصلت مشكلة بسيطة، جرب تاني كمان شوية 🙏");
+  }
+};
+
+codeInput.addEventListener("keydown", e => {
+  if (e.key === "Enter") loginBtn.click();
+});
+</script>
+
+</body>
+</html><!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>تسجيل الدخول - EduNova</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --a1:#F59E0B;   /* amber   */
+  --a2:#EC4899;   /* pink    */
+  --a3:#8B5CF6;   /* violet  */
+  --success:#4ADE80;
+  --danger:#F87171;
+  --warning:#FBBF24;
+  --text:#FFFFFF;
+  --text-muted:rgba(255,255,255,0.68);
+  --glass:rgba(255,255,255,0.09);
+  --glass-strong:rgba(255,255,255,0.16);
+  --glass-border:rgba(255,255,255,0.22);
+  --gradient:linear-gradient(120deg,#F59E0B 0%,#EC4899 50%,#8B5CF6 100%);
+  --mono:'IBM Plex Mono',monospace;
+  --blur:22px;
+}
+
+*{ margin:0; padding:0; box-sizing:border-box; font-family:'Cairo',sans-serif; }
+
+@media (prefers-reduced-motion: reduce){
+  *{ animation-duration:0.001ms !important; transition-duration:0.001ms !important; }
+}
+
+html,body{ min-height:100vh; color:var(--text); -webkit-font-smoothing:antialiased; }
+
+/* ================= FIXED BACKGROUND (same identity as dashboard) ================= */
+body{
+  position:relative;
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:24px;
+  background:#0a0714 url('icon.png') center center / cover no-repeat fixed;
+}
+
+body::before{
+  content:'';
+  position:fixed; inset:0;
+  background:
+    radial-gradient(circle at 15% 10%, rgba(245,158,11,0.28), transparent 45%),
+    radial-gradient(circle at 90% 15%, rgba(139,92,246,0.30), transparent 45%),
+    radial-gradient(circle at 50% 100%, rgba(236,72,153,0.22), transparent 50%),
+    linear-gradient(180deg, rgba(8,6,18,0.78), rgba(8,6,18,0.88));
+  z-index:0;
+  pointer-events:none;
+}
+
+::selection{ background:var(--a2); color:#fff; }
+
+/* ================= TOP BRAND ================= */
+.top-header{
+  position:fixed;
+  top:16px; left:16px; right:16px;
+  height:64px;
+  border-radius:22px;
+  background:var(--glass);
+  backdrop-filter:blur(var(--blur)) saturate(160%);
+  -webkit-backdrop-filter:blur(var(--blur)) saturate(160%);
+  border:1px solid var(--glass-border);
+  display:flex;
+  align-items:center;
+  padding:0 20px;
+  z-index:500;
+  box-shadow:0 8px 32px rgba(0,0,0,0.35);
+}
+
+.developer{ display:flex; align-items:center; gap:12px; }
+.developer img{
+  width:38px;height:38px;border-radius:12px;object-fit:cover;
+  border:1px solid var(--glass-border);
+}
+.developer h2{
+  font-size:15px;font-weight:800;
+  background:var(--gradient);
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.developer span{ font-size:11px; color:var(--text-muted); font-weight:600; }
+
+/* ================= CARD ================= */
+.card{
+  position:relative;
+  z-index:1;
+  width:380px;
+  max-width:100%;
+  padding:32px 28px;
+  border-radius:26px;
+  background:var(--glass);
+  backdrop-filter:blur(var(--blur)) saturate(160%);
+  -webkit-backdrop-filter:blur(var(--blur)) saturate(160%);
+  border:1px solid var(--glass-border);
+  text-align:center;
+  box-shadow:0 20px 60px rgba(0,0,0,0.45), 0 0 40px rgba(236,72,153,0.12);
+  animation:pop .4s ease;
+}
+
+.card::before{
+  content:'';
+  position:absolute; inset:0;
+  border-radius:inherit;
+  background:linear-gradient(135deg, rgba(255,255,255,0.20), rgba(255,255,255,0) 45%);
+  pointer-events:none;
+}
+
+@keyframes pop{
+  from{ opacity:0; transform:translateY(18px) scale(.96); }
+  to{ opacity:1; transform:translateY(0) scale(1); }
+}
+
+.hero-icon{
+  font-size:40px;
+  margin-bottom:6px;
+  filter:drop-shadow(0 0 14px rgba(236,72,153,0.35));
+  z-index:1; position:relative;
+}
+
+/* Mobile identity banner: hidden on desktop, shown on mobile instead of the lock icon */
+.card-visual{ display:none; }
+
+.brand-name{
+  font-size:22px; font-weight:800;
+  background:var(--gradient);
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+  z-index:1; position:relative;
+}
+
+.brand-sub{
+  font-size:12.5px; color:var(--text-muted); font-weight:600;
+  margin-top:4px; margin-bottom:6px;
+  font-family:var(--mono);
+  z-index:1; position:relative;
+}
+
+.card h3{
+  font-size:16px; font-weight:800;
+  margin-top:14px; margin-bottom:18px;
+  z-index:1; position:relative;
+}
+
+/* ================= INPUT ================= */
+input{
+  width:100%; padding:13px 15px; margin-bottom:14px;
+  background:rgba(255,255,255,0.08);
+  backdrop-filter:blur(10px);
+  border:1px solid var(--glass-border);
+  border-radius:14px;
+  color:var(--text);
+  font-family:var(--mono);
+  font-size:14px;
+  text-align:center;
+  letter-spacing:2px;
+  transition:.2s ease;
+  z-index:1; position:relative;
+}
+input::placeholder{ color:var(--text-muted); font-family:'Cairo',sans-serif; letter-spacing:normal; }
+input:focus{
+  outline:none; border-color:var(--a3);
+  box-shadow:0 0 0 3px rgba(139,92,246,0.25);
+}
+
+/* ================= BUTTON ================= */
+button.primary{
+  width:100%;
+  background:var(--gradient);
+  border:1px solid rgba(255,255,255,0.35);
+  padding:13px 22px; border-radius:16px;
+  color:#fff; font-weight:700; font-size:14.5px; cursor:pointer;
+  box-shadow:0 10px 26px rgba(236,72,153,0.32);
+  transition:.2s ease;
+  z-index:1; position:relative;
+}
+button.primary:hover{ transform:translateY(-3px); }
+button.primary:active{ transform:scale(0.98); }
+button.primary:focus-visible{ outline:2px solid #fff; outline-offset:2px; }
+button.primary:disabled{ opacity:.7; cursor:not-allowed; transform:none; }
+
+.msg{ margin-top:14px; font-size:13px; font-weight:700; z-index:1; position:relative; }
+.msg.success{ color:var(--success); }
+.msg.error{ color:var(--danger); }
+
+/* ================= MODALS (loading / alerts) ================= */
+.modal{
+  position:fixed; inset:0;
+  background:rgba(5,3,12,0.6);
+  backdrop-filter:blur(6px);
+  display:none; align-items:center; justify-content:center;
+  z-index:99999; padding:20px;
+}
+.modal.show{ display:flex; }
+
+.modal-box{
+  position:relative;
+  width:320px; max-width:100%; border-radius:26px; padding:28px;
+  text-align:center;
+  background:var(--glass);
+  backdrop-filter:blur(var(--blur)) saturate(160%);
+  -webkit-backdrop-filter:blur(var(--blur)) saturate(160%);
+  border:1px solid var(--glass-border);
+  box-shadow:0 0 40px rgba(236,72,153,0.3), 0 20px 60px rgba(0,0,0,0.5);
+  animation:pop .25s ease;
+}
+.modal-box::before{
+  content:'';
+  position:absolute; inset:0;
+  border-radius:inherit;
+  background:linear-gradient(135deg, rgba(255,255,255,0.20), rgba(255,255,255,0) 45%);
+  pointer-events:none;
+}
+.modal-box .icon{ font-size:38px; margin-bottom:10px; z-index:1; position:relative; }
+.modal-box h2{ font-size:17px; font-weight:800; margin-bottom:10px; z-index:1; position:relative; }
+.modal-box p{ font-size:13.5px; color:var(--text-muted); margin-bottom:18px; line-height:1.6; z-index:1; position:relative; }
+.modal-box button{
+  padding:11px 20px; border:1px solid rgba(255,255,255,0.35); border-radius:14px;
+  cursor:pointer; background:var(--gradient); color:#fff; font-weight:700; font-size:13px;
+  z-index:1; position:relative;
+}
+
+/* Loading modal specific */
+.wave-loader{
+  display:flex; justify-content:center; align-items:flex-end; gap:8px;
+  height:34px; margin:16px 0 6px;
+  z-index:1; position:relative;
+}
+.wave-loader span{
+  width:9px; height:9px; border-radius:50%;
+  background:var(--gradient);
+  animation:wave 1s infinite ease-in-out;
+  box-shadow:0 0 10px rgba(236,72,153,0.4);
+}
+.wave-loader span:nth-child(2){ animation-delay:.1s; }
+.wave-loader span:nth-child(3){ animation-delay:.2s; }
+.wave-loader span:nth-child(4){ animation-delay:.3s; }
+.wave-loader span:nth-child(5){ animation-delay:.4s; }
+@keyframes wave{
+  0%,100%{ transform:translateY(0) scale(1); opacity:.5; }
+  50%{ transform:translateY(-10px) scale(1.25); opacity:1; }
+}
+
+.hidden{ display:none !important; }
+
+/* ================= RESPONSIVE ================= */
+@media (max-width:480px){
+  .top-header{ top:10px; left:10px; right:10px; height:58px; border-radius:18px; }
+  .developer span{ display:none; }
+  .card{ padding:26px 20px; border-radius:22px; overflow:hidden; }
+
+  /* هوية icon.png ظاهرة كخلفية للكارت بدل أيقونة القفل */
+  .hero-icon{ display:none; }
+
+  .card-visual{
+    display:block;
+    width:calc(100% + 40px);
+    height:170px;
+    margin:-26px -20px 18px -20px;
+    border-radius:22px 22px 0 0;
+    background:
+      linear-gradient(180deg, rgba(8,6,18,0.10) 0%, rgba(8,6,18,0.55) 65%, rgba(8,6,18,0.92) 100%),
+      url('icon.png') center 30% / cover no-repeat;
+    box-shadow:0 10px 30px rgba(0,0,0,0.35);
+    position:relative;
+  }
+
+  .card-visual::after{
+    content:'';
+    position:absolute; inset:0;
+    background:linear-gradient(135deg, rgba(255,255,255,0.16), rgba(255,255,255,0) 45%);
+    border-radius:inherit;
+  }
+}
+  .loading-logo {
+    width: 130px !important;
+    height: 130px !important;
+    object-fit: contain;
+}
+</style>
+</head>
+<body>
+
+<header class="top-header">
+  <div class="developer">
+    <img src="icon.png" alt="EduNova">
+    <div>
+      <h2>EduNova</h2>
+      <span>Developed By Abdelrahman Mohamed</span>
+    </div>
+  </div>
+</header>
+
+<div class="card">
+  <div class="card-visual"></div>
+  <div class="hero-icon">
+   🚀
+  </div>
+  <div class="brand-name">EduNova</div>
+  <div class="brand-sub">EXAM ACCESS · V.2.0</div>
+  <h3>يلا بينا تسجل دخولك 🚀</h3>
+
+  <input id="codeInput" placeholder="اكتب الكود بتاعك هنا 🔑">
+  <button class="primary" id="loginBtn">يلا بينا! 🚀</button>
+
+  <div class="msg" id="msg"></div>
+</div>
+
+<!-- LOADING MODAL -->
+<div class="modal" id="loadingModal">
+  <div class="modal-box">
+    <div class="icon">
+      <img src="icon.png" class="loading-logo">
+    </div>
+    <h2 id="loadingTitle">لحظة واحدة بس... ⏳</h2>
+    <p>بنجهزلك الامتحان وبنأمّن جلستك... 🔒✨</p>
+    <div class="wave-loader"><span></span><span></span><span></span><span></span><span></span></div>
+  </div>
+</div>
+
+<!-- ALERT MODAL -->
+<div class="modal" id="popup">
+  <div class="modal-box">
+    <div class="icon" id="popupIcon">⚠️</div>
+    <h2 id="popupTitle">استنى شوية 👋</h2>
+    <p id="popupMsg">...</p>
+    <button id="popupBtn">تمام ✅</button>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
+import {
+  getFirestore,
+  collection,
+  getDocs,
+  query,
+  where,
+  doc,
+  getDoc,
+  setDoc
+} from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
+
+/* ================= FIREBASE ================= */
+const firebaseConfig = {
+  apiKey: "AIzaSyB6_HkPcbAhyZG8joikJr_kPK-6UACxldg",
+  authDomain: "plat-form-97b8d.firebaseapp.com",
+  projectId: "plat-form-97b8d",
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+/* ================= ELEMENTS ================= */
+const loginBtn = document.getElementById("loginBtn");
+const codeInput = document.getElementById("codeInput");
+const loadingModal = document.getElementById("loadingModal");
+const loadingTitle = document.getElementById("loadingTitle");
+
+/* ================= LOADING MODAL ================= */
+function showLoading(text){
+  loadingTitle.innerText = text;
+  loadingModal.classList.add("show");
+}
+function hideLoading(){
+  loadingModal.classList.remove("show");
+}
+
+/* ================= ALERT POPUP ================= */
+function showPopup(type, message){
+  const popup = document.getElementById("popup");
+  const icon = document.getElementById("popupIcon");
+  const title = document.getElementById("popupTitle");
+  const msg = document.getElementById("popupMsg");
+
+  popup.classList.add("show");
+
+  if (type === "error_code"){ icon.innerText = "❌"; title.innerText = "الكود مش مظبوط 😅"; }
+  else if (type === "already"){ icon.innerText = "⚠️"; title.innerText = "خد بالك 👋"; }
+  else if (type === "error"){ icon.innerText = "🔥"; title.innerText = "حدث خطأ"; }
+  else if (type === "empty"){ icon.innerText = "⌨️"; title.innerText = "استنى بس 😄"; }
+
+  msg.innerText = message;
+
+  document.getElementById("popupBtn").onclick = () => popup.classList.remove("show");
+}
+
+/* ================= LOGIN ================= */
+loginBtn.onclick = async function () {
+
+  const code = codeInput.value.trim();
+
+  if (!code) {
+    showPopup("empty", "اكتب الكود الأول يا بطل 😄");
+    return;
+  }
+
+  showLoading("بنتأكد منك... 🔍");
+  loginBtn.disabled = true;
+  loginBtn.innerText = "جاري التحميل...";
+
+  try {
+
+    const q = query(collection(db, "students"), where("code", "==", code));
+    const snap = await getDocs(q);
+
+    if (snap.empty) {
+      hideLoading();
+      loginBtn.disabled = false;
+      loginBtn.innerText = "يلا بينا! 🚀";
+      showPopup("error_code", "الكود ده مش موجود عندنا 🤔 تأكد منه وجرب تاني");
+      return;
+    }
+
+    const docData = snap.docs[0];
+    const student = docData.data();
+    const studentId = docData.id;
+
+    const examCheck = await getDoc(
+      doc(db, "students", studentId, "meta", "login")
+    );
+
+    if (examCheck.exists() && examCheck.data().used === true) {
+      hideLoading();
+      loginBtn.disabled = false;
+      loginBtn.innerText = "يلا بينا! 🚀";
+      showPopup("already", "إنت داخل قبل كده يا نجم! 😅 مينفعش تدخل مرتين");
+      return;
+    }
+
+    /* توليد رمز جلسة عشوائي يُستخدم لاحقًا للتحقق من هوية الطالب
+       عند استدعاء Cloud Functions (تصحيح المقالي) لأن الطالب لا يملك
+       حساب Firebase Authentication حقيقي */
+    const sessionToken =
+      (crypto?.randomUUID && crypto.randomUUID()) ||
+      (Date.now().toString(36) + Math.random().toString(36).slice(2));
+
+    localStorage.setItem("studentId", studentId);
+    localStorage.setItem("studentName", student.name);
+    localStorage.setItem("studentCode", student.code);
+    localStorage.setItem("studentSessionToken", sessionToken);
+
+    await setDoc(
+      doc(db, "students", studentId, "meta", "login"),
+      { used: true, time: Date.now(), sessionToken }
+    );
+
+    showLoading("أهلاً بيك يا " + student.name + " 🎉");
+
+    setTimeout(() => {
+      window.location.href = "welcome.html";
+    }, 1500);
+
+  } catch (err) {
+    console.error(err);
+    hideLoading();
+    loginBtn.disabled = false;
+    loginBtn.innerText = "يلا بينا! 🚀";
+    showPopup("error", "حصلت مشكلة بسيطة، جرب تاني كمان شوية 🙏");
+  }
+};
+
+codeInput.addEventListener("keydown", e => {
+  if (e.key === "Enter") loginBtn.click();
+});
+</script>
+
+</body>
+</html><!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>تسجيل الدخول - EduNova</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --a1:#F59E0B;   /* amber   */
+  --a2:#EC4899;   /* pink    */
+  --a3:#8B5CF6;   /* violet  */
+  --success:#4ADE80;
+  --danger:#F87171;
+  --warning:#FBBF24;
+  --text:#FFFFFF;
+  --text-muted:rgba(255,255,255,0.68);
+  --glass:rgba(255,255,255,0.09);
+  --glass-strong:rgba(255,255,255,0.16);
+  --glass-border:rgba(255,255,255,0.22);
+  --gradient:linear-gradient(120deg,#F59E0B 0%,#EC4899 50%,#8B5CF6 100%);
+  --mono:'IBM Plex Mono',monospace;
+  --blur:22px;
+}
+
+*{ margin:0; padding:0; box-sizing:border-box; font-family:'Cairo',sans-serif; }
+
+@media (prefers-reduced-motion: reduce){
+  *{ animation-duration:0.001ms !important; transition-duration:0.001ms !important; }
+}
+
+html,body{ min-height:100vh; color:var(--text); -webkit-font-smoothing:antialiased; }
+
+/* ================= FIXED BACKGROUND (same identity as dashboard) ================= */
+body{
+  position:relative;
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:24px;
+  background:#0a0714 url('icon.png') center center / cover no-repeat fixed;
+}
+
+body::before{
+  content:'';
+  position:fixed; inset:0;
+  background:
+    radial-gradient(circle at 15% 10%, rgba(245,158,11,0.28), transparent 45%),
+    radial-gradient(circle at 90% 15%, rgba(139,92,246,0.30), transparent 45%),
+    radial-gradient(circle at 50% 100%, rgba(236,72,153,0.22), transparent 50%),
+    linear-gradient(180deg, rgba(8,6,18,0.78), rgba(8,6,18,0.88));
+  z-index:0;
+  pointer-events:none;
+}
+
+::selection{ background:var(--a2); color:#fff; }
+
+/* ================= TOP BRAND ================= */
+.top-header{
+  position:fixed;
+  top:16px; left:16px; right:16px;
+  height:64px;
+  border-radius:22px;
+  background:var(--glass);
+  backdrop-filter:blur(var(--blur)) saturate(160%);
+  -webkit-backdrop-filter:blur(var(--blur)) saturate(160%);
+  border:1px solid var(--glass-border);
+  display:flex;
+  align-items:center;
+  padding:0 20px;
+  z-index:500;
+  box-shadow:0 8px 32px rgba(0,0,0,0.35);
+}
+
+.developer{ display:flex; align-items:center; gap:12px; }
+.developer img{
+  width:38px;height:38px;border-radius:12px;object-fit:cover;
+  border:1px solid var(--glass-border);
+}
+.developer h2{
+  font-size:15px;font-weight:800;
+  background:var(--gradient);
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.developer span{ font-size:11px; color:var(--text-muted); font-weight:600; }
+
+/* ================= CARD ================= */
+.card{
+  position:relative;
+  z-index:1;
+  width:380px;
+  max-width:100%;
+  padding:32px 28px;
+  border-radius:26px;
+  background:var(--glass);
+  backdrop-filter:blur(var(--blur)) saturate(160%);
+  -webkit-backdrop-filter:blur(var(--blur)) saturate(160%);
+  border:1px solid var(--glass-border);
+  text-align:center;
+  box-shadow:0 20px 60px rgba(0,0,0,0.45), 0 0 40px rgba(236,72,153,0.12);
+  animation:pop .4s ease;
+}
+
+.card::before{
+  content:'';
+  position:absolute; inset:0;
+  border-radius:inherit;
+  background:linear-gradient(135deg, rgba(255,255,255,0.20), rgba(255,255,255,0) 45%);
+  pointer-events:none;
+}
+
+@keyframes pop{
+  from{ opacity:0; transform:translateY(18px) scale(.96); }
+  to{ opacity:1; transform:translateY(0) scale(1); }
+}
+
+.hero-icon{
+  font-size:40px;
+  margin-bottom:6px;
+  filter:drop-shadow(0 0 14px rgba(236,72,153,0.35));
+  z-index:1; position:relative;
+}
+
+/* Mobile identity banner: hidden on desktop, shown on mobile instead of the lock icon */
+.card-visual{ display:none; }
+
+.brand-name{
+  font-size:22px; font-weight:800;
+  background:var(--gradient);
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+  z-index:1; position:relative;
+}
+
+.brand-sub{
+  font-size:12.5px; color:var(--text-muted); font-weight:600;
+  margin-top:4px; margin-bottom:6px;
+  font-family:var(--mono);
+  z-index:1; position:relative;
+}
+
+.card h3{
+  font-size:16px; font-weight:800;
+  margin-top:14px; margin-bottom:18px;
+  z-index:1; position:relative;
+}
+
+/* ================= INPUT ================= */
+input{
+  width:100%; padding:13px 15px; margin-bottom:14px;
+  background:rgba(255,255,255,0.08);
+  backdrop-filter:blur(10px);
+  border:1px solid var(--glass-border);
+  border-radius:14px;
+  color:var(--text);
+  font-family:var(--mono);
+  font-size:14px;
+  text-align:center;
+  letter-spacing:2px;
+  transition:.2s ease;
+  z-index:1; position:relative;
+}
+input::placeholder{ color:var(--text-muted); font-family:'Cairo',sans-serif; letter-spacing:normal; }
+input:focus{
+  outline:none; border-color:var(--a3);
+  box-shadow:0 0 0 3px rgba(139,92,246,0.25);
+}
+
+/* ================= BUTTON ================= */
+button.primary{
+  width:100%;
+  background:var(--gradient);
+  border:1px solid rgba(255,255,255,0.35);
+  padding:13px 22px; border-radius:16px;
+  color:#fff; font-weight:700; font-size:14.5px; cursor:pointer;
+  box-shadow:0 10px 26px rgba(236,72,153,0.32);
+  transition:.2s ease;
+  z-index:1; position:relative;
+}
+button.primary:hover{ transform:translateY(-3px); }
+button.primary:active{ transform:scale(0.98); }
+button.primary:focus-visible{ outline:2px solid #fff; outline-offset:2px; }
+button.primary:disabled{ opacity:.7; cursor:not-allowed; transform:none; }
+
+.msg{ margin-top:14px; font-size:13px; font-weight:700; z-index:1; position:relative; }
+.msg.success{ color:var(--success); }
+.msg.error{ color:var(--danger); }
+
+/* ================= MODALS (loading / alerts) ================= */
+.modal{
+  position:fixed; inset:0;
+  background:rgba(5,3,12,0.6);
+  backdrop-filter:blur(6px);
+  display:none; align-items:center; justify-content:center;
+  z-index:99999; padding:20px;
+}
+.modal.show{ display:flex; }
+
+.modal-box{
+  position:relative;
+  width:320px; max-width:100%; border-radius:26px; padding:28px;
+  text-align:center;
+  background:var(--glass);
+  backdrop-filter:blur(var(--blur)) saturate(160%);
+  -webkit-backdrop-filter:blur(var(--blur)) saturate(160%);
+  border:1px solid var(--glass-border);
+  box-shadow:0 0 40px rgba(236,72,153,0.3), 0 20px 60px rgba(0,0,0,0.5);
+  animation:pop .25s ease;
+}
+.modal-box::before{
+  content:'';
+  position:absolute; inset:0;
+  border-radius:inherit;
+  background:linear-gradient(135deg, rgba(255,255,255,0.20), rgba(255,255,255,0) 45%);
+  pointer-events:none;
+}
+.modal-box .icon{ font-size:38px; margin-bottom:10px; z-index:1; position:relative; }
+.modal-box h2{ font-size:17px; font-weight:800; margin-bottom:10px; z-index:1; position:relative; }
+.modal-box p{ font-size:13.5px; color:var(--text-muted); margin-bottom:18px; line-height:1.6; z-index:1; position:relative; }
+.modal-box button{
+  padding:11px 20px; border:1px solid rgba(255,255,255,0.35); border-radius:14px;
+  cursor:pointer; background:var(--gradient); color:#fff; font-weight:700; font-size:13px;
+  z-index:1; position:relative;
+}
+
+/* Loading modal specific */
+.wave-loader{
+  display:flex; justify-content:center; align-items:flex-end; gap:8px;
+  height:34px; margin:16px 0 6px;
+  z-index:1; position:relative;
+}
+.wave-loader span{
+  width:9px; height:9px; border-radius:50%;
+  background:var(--gradient);
+  animation:wave 1s infinite ease-in-out;
+  box-shadow:0 0 10px rgba(236,72,153,0.4);
+}
+.wave-loader span:nth-child(2){ animation-delay:.1s; }
+.wave-loader span:nth-child(3){ animation-delay:.2s; }
+.wave-loader span:nth-child(4){ animation-delay:.3s; }
+.wave-loader span:nth-child(5){ animation-delay:.4s; }
+@keyframes wave{
+  0%,100%{ transform:translateY(0) scale(1); opacity:.5; }
+  50%{ transform:translateY(-10px) scale(1.25); opacity:1; }
+}
+
+.hidden{ display:none !important; }
+
+/* ================= RESPONSIVE ================= */
+@media (max-width:480px){
+  .top-header{ top:10px; left:10px; right:10px; height:58px; border-radius:18px; }
+  .developer span{ display:none; }
+  .card{ padding:26px 20px; border-radius:22px; overflow:hidden; }
+
+  /* هوية icon.png ظاهرة كخلفية للكارت بدل أيقونة القفل */
+  .hero-icon{ display:none; }
+
+  .card-visual{
+    display:block;
+    width:calc(100% + 40px);
+    height:170px;
+    margin:-26px -20px 18px -20px;
+    border-radius:22px 22px 0 0;
+    background:
+      linear-gradient(180deg, rgba(8,6,18,0.10) 0%, rgba(8,6,18,0.55) 65%, rgba(8,6,18,0.92) 100%),
+      url('icon.png') center 30% / cover no-repeat;
+    box-shadow:0 10px 30px rgba(0,0,0,0.35);
+    position:relative;
+  }
+
+  .card-visual::after{
+    content:'';
+    position:absolute; inset:0;
+    background:linear-gradient(135deg, rgba(255,255,255,0.16), rgba(255,255,255,0) 45%);
+    border-radius:inherit;
+  }
+}
+  .loading-logo {
+    width: 130px !important;
+    height: 130px !important;
+    object-fit: contain;
+}
+</style>
+</head>
+<body>
+
+<header class="top-header">
+  <div class="developer">
+    <img src="icon.png" alt="EduNova">
+    <div>
+      <h2>EduNova</h2>
+      <span>Developed By Abdelrahman Mohamed</span>
+    </div>
+  </div>
+</header>
+
+<div class="card">
+  <div class="card-visual"></div>
+  <div class="hero-icon">
+   🚀
+  </div>
+  <div class="brand-name">EduNova</div>
+  <div class="brand-sub">EXAM ACCESS · V.2.0</div>
+  <h3>يلا بينا تسجل دخولك 🚀</h3>
+
+  <input id="codeInput" placeholder="اكتب الكود بتاعك هنا 🔑">
+  <button class="primary" id="loginBtn">يلا بينا! 🚀</button>
+
+  <div class="msg" id="msg"></div>
+</div>
+
+<!-- LOADING MODAL -->
+<div class="modal" id="loadingModal">
+  <div class="modal-box">
+    <div class="icon">
+      <img src="icon.png" class="loading-logo">
+    </div>
+    <h2 id="loadingTitle">لحظة واحدة بس... ⏳</h2>
+    <p>بنجهزلك الامتحان وبنأمّن جلستك... 🔒✨</p>
+    <div class="wave-loader"><span></span><span></span><span></span><span></span><span></span></div>
+  </div>
+</div>
+
+<!-- ALERT MODAL -->
+<div class="modal" id="popup">
+  <div class="modal-box">
+    <div class="icon" id="popupIcon">⚠️</div>
+    <h2 id="popupTitle">استنى شوية 👋</h2>
+    <p id="popupMsg">...</p>
+    <button id="popupBtn">تمام ✅</button>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
+import {
+  getFirestore,
+  collection,
+  getDocs,
+  query,
+  where,
+  doc,
+  getDoc,
+  setDoc
+} from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
+
+/* ================= FIREBASE ================= */
+const firebaseConfig = {
+  apiKey: "AIzaSyB6_HkPcbAhyZG8joikJr_kPK-6UACxldg",
+  authDomain: "plat-form-97b8d.firebaseapp.com",
+  projectId: "plat-form-97b8d",
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+/* ================= ELEMENTS ================= */
+const loginBtn = document.getElementById("loginBtn");
+const codeInput = document.getElementById("codeInput");
+const loadingModal = document.getElementById("loadingModal");
+const loadingTitle = document.getElementById("loadingTitle");
+
+/* ================= LOADING MODAL ================= */
+function showLoading(text){
+  loadingTitle.innerText = text;
+  loadingModal.classList.add("show");
+}
+function hideLoading(){
+  loadingModal.classList.remove("show");
+}
+
+/* ================= ALERT POPUP ================= */
+function showPopup(type, message){
+  const popup = document.getElementById("popup");
+  const icon = document.getElementById("popupIcon");
+  const title = document.getElementById("popupTitle");
+  const msg = document.getElementById("popupMsg");
+
+  popup.classList.add("show");
+
+  if (type === "error_code"){ icon.innerText = "❌"; title.innerText = "الكود مش مظبوط 😅"; }
+  else if (type === "already"){ icon.innerText = "⚠️"; title.innerText = "خد بالك 👋"; }
+  else if (type === "error"){ icon.innerText = "🔥"; title.innerText = "حدث خطأ"; }
+  else if (type === "empty"){ icon.innerText = "⌨️"; title.innerText = "استنى بس 😄"; }
+
+  msg.innerText = message;
+
+  document.getElementById("popupBtn").onclick = () => popup.classList.remove("show");
+}
+
+/* ================= LOGIN ================= */
+loginBtn.onclick = async function () {
+
+  const code = codeInput.value.trim();
+
+  if (!code) {
+    showPopup("empty", "اكتب الكود الأول يا بطل 😄");
+    return;
+  }
+
+  showLoading("بنتأكد منك... 🔍");
+  loginBtn.disabled = true;
+  loginBtn.innerText = "جاري التحميل...";
+
+  try {
+
+    const q = query(collection(db, "students"), where("code", "==", code));
+    const snap = await getDocs(q);
+
+    if (snap.empty) {
+      hideLoading();
+      loginBtn.disabled = false;
+      loginBtn.innerText = "يلا بينا! 🚀";
+      showPopup("error_code", "الكود ده مش موجود عندنا 🤔 تأكد منه وجرب تاني");
+      return;
+    }
+
+    const docData = snap.docs[0];
+    const student = docData.data();
+    const studentId = docData.id;
+
+    const examCheck = await getDoc(
+      doc(db, "students", studentId, "meta", "login")
+    );
+
+    if (examCheck.exists() && examCheck.data().used === true) {
+      hideLoading();
+      loginBtn.disabled = false;
+      loginBtn.innerText = "يلا بينا! 🚀";
+      showPopup("already", "إنت داخل قبل كده يا نجم! 😅 مينفعش تدخل مرتين");
+      return;
+    }
+
+    /* توليد رمز جلسة عشوائي يُستخدم لاحقًا للتحقق من هوية الطالب
+       عند استدعاء Cloud Functions (تصحيح المقالي) لأن الطالب لا يملك
+       حساب Firebase Authentication حقيقي */
+    const sessionToken =
+      (crypto?.randomUUID && crypto.randomUUID()) ||
+      (Date.now().toString(36) + Math.random().toString(36).slice(2));
+
+    localStorage.setItem("studentId", studentId);
+    localStorage.setItem("studentName", student.name);
+    localStorage.setItem("studentCode", student.code);
+    localStorage.setItem("studentSessionToken", sessionToken);
+
+    await setDoc(
+      doc(db, "students", studentId, "meta", "login"),
+      { used: true, time: Date.now(), sessionToken }
+    );
+
+    showLoading("أهلاً بيك يا " + student.name + " 🎉");
+
+    setTimeout(() => {
+      window.location.href = "welcome.html";
+    }, 1500);
+
+  } catch (err) {
+    console.error(err);
+    hideLoading();
+    loginBtn.disabled = false;
+    loginBtn.innerText = "يلا بينا! 🚀";
+    showPopup("error", "حصلت مشكلة بسيطة، جرب تاني كمان شوية 🙏");
   }
 };
 
