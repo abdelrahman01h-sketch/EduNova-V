@@ -1506,15 +1506,19 @@ function clearDraft() {
    or, worse, skipped in one of the paths. */
 
 function computeMcqTally() {
-  let correct = 0, wrong = 0, blank = 0;
+  // كل سؤال اختياري ليه درجته الخاصة (q.points) — لو مش متحطة (أسئلة
+  // قديمة قبل إضافة الميزة) نفترض درجة واحدة زي ما كان شغال قبل كده.
+  let correct = 0, wrong = 0, blank = 0, earnedPoints = 0, totalPoints = 0;
   questions.forEach((q, i) => {
     if (q.type === "essay") return;
+    const qPoints = Number(q.points ?? 1) || 1;
+    totalPoints += qPoints;
     const a = userAnswers[i];
     if (a === undefined) blank++;
-    else if (a === q.correct) correct++;
+    else if (a === q.correct) { correct++; earnedPoints += qPoints; }
     else wrong++;
   });
-  return { correct, wrong, blank };
+  return { correct, wrong, blank, earnedPoints, totalPoints };
 }
 
 function essayQuestionsWithAnswers() {
@@ -1542,18 +1546,21 @@ async function submitExamAnswers(extraFields = {}) {
   const essayList = essayQuestionsWithAnswers();
   const hasEssay = essayList.length > 0;
 
-  const mcqTotal = mcq.correct + mcq.wrong + mcq.blank;
+  const mcqEarnedPoints = mcq.earnedPoints;
+  const mcqTotalPoints = mcq.totalPoints;
   const essayTotalPoints = essayList.reduce((s, e) => s + Number(e.question.points || 0), 0);
-  const totalExamPoints = mcqTotal + essayTotalPoints; // MCQ = 1 point each
+  const totalExamPoints = mcqTotalPoints + essayTotalPoints;
+  // essays not graded yet at submit time, so earned points so far = MCQ only.
+  const totalEarnedPoints = mcqEarnedPoints;
 
-  // Legacy behaviour preserved: for a pure-MCQ exam, percent is computed
-  // exactly as before (correct / questions.length). For an exam that
-  // contains essays, we can't publish a final percent until every essay
-  // is graded — rule #51 — so percent is left null and the exam attempt
-  // is marked "processing" until the backend finishes.
+  // Percent is now based on real points (each MCQ question can have its own
+  // grade, not just "1 point per question"). For an exam that contains
+  // essays, we can't publish a final percent until every essay is graded
+  // — rule #51 — so percent is left null and the exam attempt is marked
+  // "processing" until the backend/teacher finishes.
   const percent = hasEssay
     ? null
-    : (questions.length ? Math.round((mcq.correct / questions.length) * 100) : 0);
+    : (mcqTotalPoints ? Math.round((mcqEarnedPoints / mcqTotalPoints) * 100) : 0);
 
   const attemptRef = doc(db, "students", studentId, "exams", examData.name);
 
@@ -1564,10 +1571,13 @@ async function submitExamAnswers(extraFields = {}) {
     correct: mcq.correct,
     wrong: mcq.wrong,
     blank: mcq.blank,
+    mcqEarnedPoints,
+    mcqTotalPoints,
     percent,
     hasEssay,
     essayTotalPoints,
     totalExamPoints,
+    totalEarnedPoints,
     examGradingStatus: hasEssay ? "processing" : "graded",
     answers: userAnswers,
     finished: true,
@@ -2034,7 +2044,6 @@ function showSubmitModal(msg) {
   modal.innerHTML = `
     <div class="modal-box glass">
       <h3>📌 متأكد إنك عايز تسلّم؟</h3>
-      <h3>عارفين انك شاطر بس مفيش مانع لو تراجع كمان مره 😁</h3>
       <p>${msg}</p>
       <div class="modal-actions">
         <button class="btn-danger" onclick="confirmSubmit()">أيوة، سلّم 📤</button>
