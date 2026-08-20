@@ -2639,16 +2639,24 @@ updateBadge(hasEssay && !gradingDone ? 0 : (percent || 0));
       },300);
     }
 
-    /* ================= LIVE UPDATE WHILE ESSAYS ARE GRADING =================
+    /* ================= LIVE UPDATE WHILE / AFTER ESSAYS ARE GRADED =================
        rule #50: poll safely via a Firestore listener instead of a fake
-       progress bar — once the backend finishes grading, this listener
-       re-runs loadResult() so the final percentage appears automatically. */
-    if (hasEssay && !gradingDone && !window.__resultListenerAttached) {
+       progress bar. We keep listening even after gradingDone becomes
+       true (not just while pending) so that if the teacher later edits
+       an already-approved grade, the student's page updates instantly
+       too — without needing a refresh. We only re-render when the
+       percent actually changes, so the very first snapshot (which just
+       confirms the state we already rendered) doesn't cause a loop. */
+    if (hasEssay && !window.__resultListenerAttached) {
       window.__resultListenerAttached = true;
+      window.__lastKnownPercent = result.percent ?? null;
       const attemptRef = doc(db, "students", studentId, "exams", examName);
       onSnapshot(attemptRef, snap => {
         const d = snap.data();
-        if (d && d.percent !== null && d.percent !== undefined) {
+        if (!d) return;
+        const newPercent = d.percent ?? null;
+        if (newPercent !== window.__lastKnownPercent) {
+          window.__lastKnownPercent = newPercent;
           loadResult();
         }
       });
@@ -2744,7 +2752,7 @@ else{
 <div class="q-header">
 
     <div class="question-number">
-        السؤال ${i + 1}
+        السؤال ${i + 1} <span style="opacity:.7;font-size:12px;">(${q.points ?? 1} درجة)</span>
     </div>
 
     <div class="${
@@ -2933,4 +2941,4 @@ loadResult();
 </script>
 
 </body>
-  </html>
+</html>
