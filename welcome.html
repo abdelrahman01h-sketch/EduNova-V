@@ -448,7 +448,7 @@ circle{ fill:none; stroke-width:8; r:36; cx:45; cy:45; }
             <div class="info-card">
               <div class="icon">📚</div>
               <div>
-                <h3>اسم الامتحان</h3>
+                <h3>📛 اسم الامتحان</h3>
                 <p id="examName">--</p>
               </div>
             </div>
@@ -456,7 +456,7 @@ circle{ fill:none; stroke-width:8; r:36; cx:45; cy:45; }
             <div class="info-card">
               <div class="icon">⏱</div>
               <div>
-                <h3>مدة الامتحان</h3>
+                <h3>⏱️ مدته قد إيه</h3>
                 <p id="examTime">--</p>
               </div>
             </div>
@@ -464,14 +464,14 @@ circle{ fill:none; stroke-width:8; r:36; cx:45; cy:45; }
             <div class="info-card">
               <div class="icon">❓</div>
               <div>
-                <h3>عدد الأسئلة</h3>
+                <h3>🔢 عدد الأسئلة</h3>
                 <p id="examQuestions">--</p>
               </div>
             </div>
           </div>
 
           <!-- ===== STUDENT INFO ===== -->
-          <div class="section-title">👤 بيانات الطالب</div>
+          <div class="section-title">👤 بياناتك انت</div>
           <div class="info-grid">
             <div class="info-card">
               <div class="icon">👤</div>
@@ -484,7 +484,7 @@ circle{ fill:none; stroke-width:8; r:36; cx:45; cy:45; }
             <div class="info-card">
               <div class="icon">🔐</div>
               <div>
-                <h3>كود الطالب</h3>
+                <h3>🔑 كودك</h3>
                 <p id="studentCode">--</p>
               </div>
             </div>
@@ -499,12 +499,12 @@ circle{ fill:none; stroke-width:8; r:36; cx:45; cy:45; }
           <!-- ===== WELCOME HERO ===== -->
           <div class="hero-card">
             <h1 id="welcome">مرحباً 👋</h1>
-            <p>برجاء قراءة التعليمات أدناه للحصول على امتحان مستقر</p>
+            <p>اقرا التعليمات تحت دي كويس عشان الامتحان يعدي معاك على الماشي 😉</p>
           </div>
 
           <!-- ===== MOTIVATION ===== -->
           <div class="motivation-box">
-            <h3>💡 رسالة تحفيزية</h3>
+            <h3>💡 كلمتين قبل ما تبدأ</h3>
             <p id="motivationText">
               اطلبِ العلمَ ولا تَكسَلْ فَما أبعدَ الخيرَ عن أهلِ الكَسَلِ<br>
               واهجُرِ النومَ وحَصِّلْهُ فَمَن يَعرِفُ المَطلوبَ يَحْقِرُ ما بَذَلَ
@@ -513,7 +513,7 @@ circle{ fill:none; stroke-width:8; r:36; cx:45; cy:45; }
 
           <!-- ===== RULES ===== -->
           <div class="rules-box">
-            <h3>📌 تعليمات الامتحان</h3>
+            <h3>📌 قبل ما تبدأ، خد بالك من كده</h3>
             <p id="ruleText">...</p>
           </div>
 
@@ -541,7 +541,7 @@ circle{ fill:none; stroke-width:8; r:36; cx:45; cy:45; }
 
   <div id="startOverlay" class="overlay hidden">
     <div class="countdown-box">
-      <h2>استعد للامتحان</h2>
+      <h2>يلا نجهز نفسنا للامتحان 💪</h2>
       <div id="countNumber">5</div>
     </div>
   </div>
@@ -614,7 +614,7 @@ const interval = setInterval(() => {
     startBtn.classList.remove("locked");
     startBtn.classList.add("unlocked");
 
-    startBtn.innerHTML = "🚀 ابدأ الامتحان";
+    startBtn.innerHTML = "🚀 يلا بينا نبدأ!";
 
     if (fireBadge) {
       fireBadge.style.display = "none";
@@ -653,7 +653,7 @@ function typeText(text, el) {
   }, 80);
 }
 
-typeText(`مرحباً ${studentName || "طالبنا"} `, welcome);
+typeText(`أهلاً بيك يا ${studentName || "بطل"} 👋`, welcome);
 
 /* ================== عرض بيانات الطالب ================== */
 document.getElementById("studentName").innerText = studentName || "--";
@@ -692,7 +692,7 @@ async function checkIfAlreadyTaken() {
   const snap = await getDoc(ref);
 
   if (snap.exists() && snap.data().finished === true) {
-    showPopup("لقد امتحنت من قبل");
+    showPopup("إنت خلصت الامتحان ده قبل كده يا كبير 😅");
   }
 }
 
@@ -737,7 +737,7 @@ function showPopup(text) {
             font-weight:700;
             font-family:'Cairo',sans-serif;
           ">
-          حسناً
+          تمام ✅
         </button>
       </div>
     </div>
@@ -802,15 +802,15 @@ async function startExam() {
 }
 
 const rules = [
-  "📖 اقرأ الأسئلة جيداً قبل الإجابة ولا تتسرع",
-  "⏱️ لديك وقت محدد يجب إدارته بحكمة",
+  "📖 اقرا كل سؤال كويس وماتستعجلش خالص",
+  "⏱️ الوقت محدود، وزّعه صح على الأسئلة",
   "🧠 الامتحان يعتمد على الفهم وليس الحفظ فقط",
-  "💾 يتم حفظ إجاباتك تلقائياً أثناء الحل",
-  "🚫 ممنوع الخروج أو فتح تبويب آخر أثناء الامتحان",
-  "🎯 ركّز جيداً كل سؤال قد يفرق في درجتك",
-  "🔒 لا يمكنك إعادة الامتحان بعد التسليم",
-  "📊 راجع إجاباتك قبل الضغط على تسليم",
-  "✨ هدوءك وتركيزك هو سر نجاحك"
+  "💾 إجاباتك بتتحفظ لوحدها وانت بتحل، متقلقش",
+  "🚫 متخرجش أو تفتح تبويب تاني وانت في الامتحان",
+  "🎯 خللي بالك، كل سؤال ممكن يفرق في درجتك",
+  "🔒 لما تسلّم مش هتقدر تدخل تاني، فخد وقتك",
+  "📊 راجع إجاباتك كويس قبل ما تضغط تسليم",
+  "✨ خد نفس عميق وركّز، إنت هتعملها 🌟"
 ];
 
 let ruleIndex = 0;
