@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>صفحة الامتحان - EduNova</title>
+<title>يلا نمتحن - EduNova</title>
 <link rel="icon" href="icon.png">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1294,8 +1294,8 @@ html:-webkit-full-screen .question-image-box img {
       <span class="net-dot" id="netDot"></span>
       <span id="netLabel">جاري الفحص...</span>
     </div>
-    <span class="contact-info">اضغط 1-4 لاختيار إجابة</span>
-    <button class="submit-btn" onclick="submitExam()">تسليم الامتحان</button>
+    <span class="contact-info">دوس 1-4 تختار إجابة بسرعة</span>
+    <button class="submit-btn" onclick="submitExam()">📤 سلّم الامتحان</button>
   </div>
 </header>
 
@@ -1316,9 +1316,9 @@ html:-webkit-full-screen .question-image-box img {
         <div class="question-toolbar">
           <button class="icon-btn" onclick="changeFont(-1)" title="تصغير الخط">A-</button>
           <button class="icon-btn" onclick="changeFont(1)" title="تكبير الخط">A+</button>
-          <button class="icon-btn" id="flagBtn" onclick="toggleFlag()" title="علّم هذا السؤال">🚩</button>
+          <button class="icon-btn" id="flagBtn" onclick="toggleFlag()" title="حط علامة على السؤال ده">🚩</button>
         </div>
-        <div class="question-text" id="questionText">❓ جاري تحميل السؤال...</div>
+        <div class="question-text" id="questionText">❓ لحظة، بنجيب السؤال...</div>
         <div class="question-image-box hidden" id="questionImageBox">
           <img id="questionImage" src="" alt="صورة السؤال" onclick="openLightbox(this.src)">
         </div>
@@ -1332,10 +1332,10 @@ html:-webkit-full-screen .question-image-box img {
 
 <!-- ===== BOTTOM FLOATING DOCK ===== -->
 <nav class="dock glass" id="dock">
-  <button onclick="prev()">⏮ السابق</button>
+  <button onclick="prev()">⏮ اللي فات</button>
   <button onclick="openCalculator()">🧮 آلة حاسبة</button>
   <button onclick="jumpToFlagged()">🚩 المعلّمة</button>
-  <button onclick="next()">التالي ⏭</button>
+  <button onclick="next()">اللي بعده ⏭</button>
 </nav>
 
 <!-- ===== CALCULATOR ===== -->
@@ -1383,11 +1383,11 @@ html:-webkit-full-screen .question-image-box img {
 <div id="startGate" class="modal-overlay">
   <div class="modal-box glass">
     <h3>🚨 وضع الامتحان الآمن</h3>
-    <p>يجب تشغيل وضع ملء الشاشة قبل بدء الامتحان</p>
-    <button class="btn-primary" onclick="enableFullscreen()">تشغيل Fullscreen</button>
-    <p id="fsWarning" class="warn-text hidden">⚠️ يجب البقاء في وضع ملء الشاشة</p>
+    <p>لازم تشغّل وضع ملء الشاشة الأول عشان تقدر تبدأ 🖥️</p>
+    <button class="btn-primary" onclick="enableFullscreen()">🚀 شغّل Fullscreen</button>
+    <p id="fsWarning" class="warn-text hidden">⚠️ خليك في وضع ملء الشاشة طول الوقت</p>
     <div class="fs-warning-banner hidden" id="exitWarning">
-      🚨 يرجى العلم: عند الخروج من المتصفح أو تغيير التبويب سيتم تسليم الامتحان تلقائياً
+      🚨 خد بالك: لو خرجت من المتصفح أو فتحت تبويب تاني، الامتحان هيتسلّم لوحده أوتوماتيك
     </div>
   </div>
 </div>
@@ -1395,20 +1395,20 @@ html:-webkit-full-screen .question-image-box img {
 <!-- ===== BLOCK MODAL ===== -->
 <div id="blockModal" class="modal hidden">
   <div class="modal-box glass">
-    <h2>🚫 تم الحظر</h2>
-    <p>لقد قمت بأداء هذا الامتحان من قبل</p>
-    <button class="btn-primary" onclick="goResult()">حسناً</button>
+    <h2>🚫 مينفعش كده</h2>
+    <p>إنت خلصت الامتحان ده قبل كده يا بطل 😅</p>
+    <button class="btn-primary" onclick="goResult()">تمام، وريني النتيجة ✅</button>
   </div>
 </div>
 
 <!-- ===== RELOAD MODAL ===== -->
 <div id="reloadModal" class="modal hidden">
   <div class="modal-box glass">
-    <h2>⚠️ تنبيه مهم</h2>
-    <p>إذا قمت بعمل إعادة تحميل سيتم تسليم الامتحان تلقائياً</p>
+    <h2>⚠️ استنى لحظة</h2>
+    <p>لو عملت Refresh دلوقتي هيتسلّم الامتحان أوتوماتيك، متخسرش نفسك 😬</p>
     <div class="modal-actions">
-      <button class="btn-success" onclick="cancelReload()">تراجع</button>
-      <button class="btn-danger" onclick="confirmReloadSubmit()">تأكيد</button>
+      <button class="btn-success" onclick="cancelReload()">لأ، ارجع 🙅</button>
+      <button class="btn-danger" onclick="confirmReloadSubmit()">أيوة سلّم</button>
     </div>
   </div>
 </div>
@@ -1614,7 +1614,7 @@ async function loadExam() {
   const attemptSnap = await getDoc(attemptRef);
 
   if (attemptSnap.exists() && attemptSnap.data().finished) {
-    showBlockedPopup("لقد قمت بامتحان هذا الاختبار من قبل ❌");
+    showBlockedPopup("إنت عدّيت الامتحان ده قبل كده ❌");
     return;
   }
 
@@ -1750,7 +1750,7 @@ function updateFlagBtn() {
 
 window.jumpToFlagged = function () {
   if (flaggedQuestions.size === 0) {
-    showToast("لا توجد أسئلة معلّمة حتى الآن");
+    showToast("مفيش أسئلة متعلّمة لحد دلوقتي 🤷");
     return;
   }
   const flaggedArr = Array.from(flaggedQuestions).sort((a, b) => a - b);
@@ -1909,10 +1909,10 @@ function renderEssayBox(box, q) {
   const savedText = (existing && typeof existing === "object") ? (existing.answer || "") : "";
 
   wrap.innerHTML = `
-    <div class="essay-label">✍️ إجابتك</div>
+    <div class="essay-label">✍️ اكتب إجابتك هنا يا نجم</div>
     <textarea id="essayInput" class="essay-textarea" dir="rtl"
       maxlength="${ESSAY_MAX_CHARS}"
-      placeholder="اكتب إجابتك هنا...">${escapeHtml(savedText)}</textarea>
+      placeholder="يلا اكتب إجابتك هنا... 📝">${escapeHtml(savedText)}</textarea>
     <div class="essay-counter" id="essayCounter">عدد الأحرف: ${savedText.length} / ${ESSAY_MAX_CHARS}</div>
   `;
 
@@ -2020,8 +2020,8 @@ window.submitExam = function () {
   });
 
   const msg = unanswered
-    ? `⚠️ لديك ${unanswered} أسئلة غير مجابة`
-    : "✔️ جميع الأسئلة مجابة";
+    ? `⚠️ لسه فاضلك ${unanswered} أسئلة ماجاوبتش عليها`
+    : "✔️ جاوبت على كل حاجة، تمام!";
 
   showSubmitModal(msg);
 };
@@ -2033,11 +2033,12 @@ function showSubmitModal(msg) {
 
   modal.innerHTML = `
     <div class="modal-box glass">
-      <h3>📌 تأكيد التسليم</h3>
+      <h3>📌 متأكد إنك عايز تسلّم؟</h3>
+      <h3>عارفين انك شاطر بس مفيش مانع لو تراجع كمان مره 😁</h3>
       <p>${msg}</p>
       <div class="modal-actions">
-        <button class="btn-danger" onclick="confirmSubmit()">تسليم</button>
-        <button class="btn-success" onclick="this.closest('.modal-overlay').remove()">إلغاء</button>
+        <button class="btn-danger" onclick="confirmSubmit()">أيوة، سلّم 📤</button>
+        <button class="btn-success" onclick="this.closest('.modal-overlay').remove()">لسه لأ، هراجع 🙅</button>
       </div>
     </div>
   `;
@@ -2054,16 +2055,16 @@ function showCheatingModal() {
   modal.innerHTML = `
     <div class="modal-box glass" style="border:2px solid var(--danger)">
       <h3 style="background:none;-webkit-text-fill-color:var(--danger);color:var(--danger);animation:pulse 1s infinite;">
-        ⚠️ تم رصد سلوك غير طبيعي
+        ⚠️ لاحظنا حركة غريبة شوية 👀
       </h3>
       <p style="margin-top:10px; line-height:1.7; font-size:14px;">
-        لقد تم تنبيهك سابقًا بعدم الخروج من الامتحان أو تغيير التبويب.<br><br>
+        إحنا قولنالك قبل كده متخرجش من الامتحان أو تغيّر تبويب.<br><br>
         قال النبي ﷺ: <br>
         <b>"من غشنا فليس منا"</b><br><br>
-        تم تجاهل التعليمات.
+        ويظهر إنك تجاهلت الكلام 😅
       </p>
       <p style="margin-top:10px; color:var(--warning); font-weight:700;">
-        سيتم تحويلك خلال <span id="countdown">30</span> ثواني
+        هننقلك خلال <span id="countdown">30</span> ثانية
       </p>
     </div>
   `;
@@ -2171,7 +2172,7 @@ window.addEventListener("focus", () => {
 /* ================= NETWORK QUALITY + ONE-TIME DISCONNECT ALLOWANCE ================= */
 
 function initNetworkMonitor() {
-  updateNetBadge(isOffline ? "offline" : "checking", isOffline ? "غير متصل" : "جاري الفحص...");
+  updateNetBadge(isOffline ? "offline" : "checking", isOffline ? "مفيش نت" : "بنتأكد...");
 
   window.addEventListener("online", handleOnline);
   window.addEventListener("offline", handleOffline);
@@ -2202,7 +2203,7 @@ function updateNetBadge(status, label) {
 
 async function measureConnectionQuality() {
   if (!navigator.onLine) {
-    updateNetBadge("offline", "غير متصل");
+    updateNetBadge("offline", "مفيش نت 📡");
     return;
   }
 
@@ -2211,18 +2212,18 @@ async function measureConnectionQuality() {
     await fetch("https://www.gstatic.com/generate_204", { mode: "no-cors", cache: "no-store" });
     const latency = performance.now() - start;
 
-    if (latency < 250) updateNetBadge("good", "ممتاز");
-    else if (latency < 700) updateNetBadge("mid", "جيد");
-    else updateNetBadge("weak", "ضعيف");
+    if (latency < 250) updateNetBadge("good", "تمام كده 🔥");
+    else if (latency < 700) updateNetBadge("mid", "لا بأس 👍");
+    else updateNetBadge("weak", "ضعيف شوية 😕");
   } catch (e) {
-    updateNetBadge("weak", "ضعيف");
+    updateNetBadge("weak", "ضعيف شوية 😕");
   }
 }
 
 function handleOffline() {
   if (isOffline && document.getElementById("offlineOverlay")) return;
   isOffline = true;
-  updateNetBadge("offline", "غير متصل");
+  updateNetBadge("offline", "مفيش نت 📡");
 
   if (disqualifying) return; // already forfeited, just wait for reconnection
 
@@ -2256,7 +2257,7 @@ function handleOnline() {
   isOffline = false;
 
   hideOfflineOverlay();
-  showToast("✅ تم استعادة الاتصال بالإنترنت، يمكنك المتابعة");
+  showToast("✅ رجع النت! كمّل يا بطل");
 
   if (!timerInterval && totalSeconds > 0) {
     timerInterval = setInterval(() => {
@@ -2288,17 +2289,17 @@ function showOfflineOverlay(disqualified) {
     overlay.innerHTML = `
       <div class="modal-box glass" style="border:2px solid var(--danger)">
         <div class="status-icon danger">🚫</div>
-        <h3 style="-webkit-text-fill-color:var(--danger); color:var(--danger);">انقطع الاتصال مرة أخرى</h3>
-        <p>لقد استخدمت فرصتك الوحيدة لإصلاح الشبكة، وبما أن الاتصال انقطع مرة ثانية يُعتبر الامتحان خاسرًا تلقائيًا.<br>سيتم تسجيل إجاباتك الحالية فور عودة الاتصال.</p>
-        <p class="warn-text" id="reconnectStatus">📡 في انتظار عودة الاتصال...</p>
+        <h3 style="-webkit-text-fill-color:var(--danger); color:var(--danger);">النت قطع تاني 😬</h3>
+        <p>كنت خدت فرصتك الوحيدة تصلّح النت، ودلوقتي قطع تاني، فللأسف الامتحان هيتحسب خسران أوتوماتيك.<br>هنسجّل إجاباتك اللي عندك أول ما النت يرجع.</p>
+        <p class="warn-text" id="reconnectStatus">📡 مستنيين النت يرجع...</p>
       </div>`;
   } else {
     overlay.innerHTML = `
       <div class="modal-box glass" style="border:2px solid var(--a1)">
         <div class="status-icon warn">📡</div>
-        <h3>انقطع الاتصال بالإنترنت</h3>
-        <p>يمكنك الخروج من وضع ملء الشاشة الآن لإصلاح مشكلة الشبكة — <b>هذه فرصتك الوحيدة</b> في هذا الامتحان.<br>الوقت متوقف مؤقتًا، وإذا انقطع الاتصال مرة أخرى سيضيع عليك الامتحان تلقائيًا.</p>
-        <p class="warn-text">جاري إعادة المحاولة تلقائيًا كل بضع ثوانٍ...</p>
+        <h3>النت قطع فجأة 📡</h3>
+        <p>تقدر تخرج من وضع ملء الشاشة دلوقتي عشان تصلّح مشكلة النت — بس خد بالك، <b>دي فرصتك الوحيدة</b> في الامتحان ده.<br>الوقت واقف مؤقتًا، ولو النت قطع تاني هيضيع عليك الامتحان أوتوماتيك.</p>
+        <p class="warn-text">بنحاول نتصل تاني كل شوية ثواني... ⏳</p>
       </div>`;
   }
 
@@ -2314,7 +2315,7 @@ function startDisqualification() {
   disqualifying = true;
   networkFixMode = false;
   showOfflineOverlay(true);
-  showToast("🚫 تم فقد الامتحان بسبب انقطاع الاتصال مرتين");
+  showToast("🚫 للأسف ضاع الامتحان، النت قطع مرتين");
 }
 
 async function finalizeDisqualification() {
@@ -2347,8 +2348,8 @@ function timeFinishedPopup() {
   modal.innerHTML = `
     <div class="modal-box glass">
       <div class="status-icon danger">⏰</div>
-      <h3>انتهى الوقت</h3>
-      <p>جاري تسليم النتائج وحفظ إجاباتك...</p>
+      <h3>⏰ خلص الوقت!</h3>
+      <p>بنسلّم إجاباتك ونحفظها... لحظات 🙏</p>
       <div class="mini-loader"><span></span></div>
     </div>
   `;
@@ -2369,9 +2370,9 @@ function showLastMinuteWarning() {
   modal.innerHTML = `
     <div class="modal-box glass">
       <div class="status-icon warn">⚠️</div>
-      <h3>تنبيه هام</h3>
-      <p>تبقى دقيقة واحدة فقط على انتهاء الامتحان</p>
-      <button class="btn-primary warn-close">حسناً</button>
+      <h3>⏳ خد بالك</h3>
+      <p>باقيلك دقيقة واحدة بس على آخر الوقت! ⏱️</p>
+      <button class="btn-primary warn-close">تمام ✅</button>
     </div>
   `;
 
