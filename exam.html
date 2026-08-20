@@ -125,6 +125,28 @@ button{ font-family:'Cairo',sans-serif; }
 }
 @keyframes shake{ 0%{transform:translateX(0)} 25%{transform:translateX(-2px)} 50%{transform:translateX(2px)} 75%{transform:translateX(-2px)} 100%{transform:translateX(0)} }
 
+/* ================= NETWORK QUALITY BADGE ================= */
+.net-badge{
+  display:flex; align-items:center; gap:7px;
+  padding:8px 13px; border-radius:14px;
+  background:var(--glass-strong); border:1px solid var(--glass-border);
+  font-size:11.5px; font-weight:700; color:var(--text-muted);
+  white-space:nowrap; z-index:1;
+  box-shadow:0 0 15px rgba(0,0,0,0.25);
+  transition:.3s;
+}
+.net-dot{
+  width:9px; height:9px; border-radius:50%;
+  background:#9ca3af; flex-shrink:0;
+  box-shadow:0 0 6px rgba(156,163,175,0.6);
+  transition:.3s;
+}
+.net-dot.net-good{ background:var(--success); box-shadow:0 0 8px rgba(74,222,128,0.7); }
+.net-dot.net-mid{ background:var(--warning); box-shadow:0 0 8px rgba(251,191,36,0.7); animation:pulse 1.6s infinite; }
+.net-dot.net-weak{ background:var(--a1); box-shadow:0 0 8px rgba(245,158,11,0.7); animation:pulse 1s infinite; }
+.net-dot.net-offline{ background:var(--danger); box-shadow:0 0 8px rgba(248,113,113,0.7); animation:shake .8s infinite; }
+.net-badge.net-badge-offline{ border-color:rgba(248,113,113,0.5); color:var(--danger); }
+
 .header-actions{ display:flex; align-items:center; gap:12px; z-index:1; }
 .contact-info{ font-size:10.5px; color:var(--text-muted); font-weight:600; display:none; }
 .submit-btn{
@@ -556,6 +578,19 @@ img {
         font-size: 14px;
 
         border-radius: 15px;
+    }
+
+    /*
+       شارة الشبكة تاخد مساحة أقل على الموبايل
+    */
+    .net-badge {
+        padding: 6px 9px;
+    }
+    .net-badge #netLabel {
+        display: none;
+    }
+    .contact-info {
+        display: none;
     }
 
 
@@ -1209,6 +1244,30 @@ html:-webkit-full-screen .question-image-box img {
   .questions-list {
     margin-top: 10px;
 }
+/* ================= ESSAY ANSWER BOX ================= */
+.essay-answer-wrap{ position:relative; z-index:1; }
+.essay-textarea{
+  width:100%; min-height:220px; resize:vertical;
+  background:rgba(255,255,255,0.07);
+  backdrop-filter:blur(10px);
+  border:1px solid var(--glass-border);
+  border-radius:16px;
+  color:var(--text);
+  font-family:'Cairo',sans-serif;
+  font-size:15px; line-height:1.8;
+  padding:16px; direction:rtl; text-align:right;
+  transition:.2s ease;
+}
+.essay-textarea:focus{
+  outline:none; border-color:var(--a3);
+  box-shadow:0 0 0 3px rgba(139,92,246,0.25);
+}
+.essay-counter{
+  margin-top:8px; font-size:12px; color:var(--text-muted);
+  font-family:var(--mono); text-align:left;
+}
+.essay-counter.limit{ color:var(--danger); }
+.essay-label{ font-size:13px; font-weight:800; margin-bottom:8px; z-index:1; position:relative; }
 </style>
 </head>
 
@@ -1231,6 +1290,10 @@ html:-webkit-full-screen .question-image-box img {
   </div>
 
   <div class="header-actions">
+    <div class="net-badge" id="netBadge" title="جودة الاتصال بالإنترنت">
+      <span class="net-dot" id="netDot"></span>
+      <span id="netLabel">جاري الفحص...</span>
+    </div>
     <span class="contact-info">اضغط 1-4 لاختيار إجابة</span>
     <button class="submit-btn" onclick="submitExam()">تسليم الامتحان</button>
   </div>
@@ -1373,6 +1436,7 @@ const db = getFirestore(app);
 
 /* ================= DATA ================= */
 const studentId = localStorage.getItem("studentId");
+const sessionToken = localStorage.getItem("studentSessionToken") || "";
 
 let questions = [];
 let current = 0;
@@ -1390,6 +1454,14 @@ let allowExit = false;
 let autoSubmitted = false;
 let violationDetected = false;
 let qFontSize = 22;
+
+/* ================= NETWORK MONITOR STATE ================= */
+const netViolationKey = `edunova_net_violations_${studentId}`;
+let netViolations = parseInt(localStorage.getItem(netViolationKey) || "0", 10);
+let isOffline = !navigator.onLine;
+let networkFixMode = false;   // true while the student is legitimately allowed to leave fullscreen to fix the network
+let disqualifying = false;    // true once a 2nd disconnect has forfeited the exam
+let netCheckInterval = null;
 
 /* ================= TOAST ================= */
 window.showToast = function (msg) {
@@ -1411,6 +1483,124 @@ function unlockExam() {
   if (gate) gate.style.display = "none";
 }
 
+/* ================= DRAFT AUTOSAVE (answer recovery) ================= */
+function draftKey() {
+  return `edunova_draft_${studentId}_${examId || "current"}`;
+}
+function saveDraft() {
+  try { localStorage.setItem(draftKey(), JSON.stringify(userAnswers)); } catch (e) {}
+}
+function restoreDraftIfAny() {
+  try {
+    const raw = localStorage.getItem(draftKey());
+    if (raw) userAnswers = JSON.parse(raw) || {};
+  } catch (e) {}
+}
+function clearDraft() {
+  try { localStorage.removeItem(draftKey()); } catch (e) {}
+}
+
+/* ================= SCORING / ESSAY SUBMISSION HELPERS =================
+   Shared by every submit path (manual, time-out, auto-submit, network
+   disqualification) so the essay-saving logic never has to be duplicated
+   or, worse, skipped in one of the paths. */
+
+function computeMcqTally() {
+  let correct = 0, wrong = 0, blank = 0;
+  questions.forEach((q, i) => {
+    if (q.type === "essay") return;
+    const a = userAnswers[i];
+    if (a === undefined) blank++;
+    else if (a === q.correct) correct++;
+    else wrong++;
+  });
+  return { correct, wrong, blank };
+}
+
+function essayQuestionsWithAnswers() {
+  return questions
+    .map((q, i) => ({ q, i }))
+    .filter(({ q }) => q.type === "essay")
+    .map(({ q, i }) => {
+      const a = userAnswers[i];
+      const answer = (a && typeof a === "object") ? (a.answer || "") : "";
+      return { question: q, index: i, answer };
+    });
+}
+
+/**
+ * Writes the exam attempt doc + kicks off essay grading (essayResults
+ * stub docs). extraFields lets each submit path attach its own flags
+ * (autoSubmitted, disqualified, exitReason, ...) without duplicating the
+ * scoring/points logic itself. This does NOT grade essays in the
+ * browser — it only writes "pending" stubs; the Cloud Function backend
+ * (functions/index.js) does the actual AI grading server-side.
+ */
+async function submitExamAnswers(extraFields = {}) {
+
+  const mcq = computeMcqTally();
+  const essayList = essayQuestionsWithAnswers();
+  const hasEssay = essayList.length > 0;
+
+  const mcqTotal = mcq.correct + mcq.wrong + mcq.blank;
+  const essayTotalPoints = essayList.reduce((s, e) => s + Number(e.question.points || 0), 0);
+  const totalExamPoints = mcqTotal + essayTotalPoints; // MCQ = 1 point each
+
+  // Legacy behaviour preserved: for a pure-MCQ exam, percent is computed
+  // exactly as before (correct / questions.length). For an exam that
+  // contains essays, we can't publish a final percent until every essay
+  // is graded — rule #51 — so percent is left null and the exam attempt
+  // is marked "processing" until the backend finishes.
+  const percent = hasEssay
+    ? null
+    : (questions.length ? Math.round((mcq.correct / questions.length) * 100) : 0);
+
+  const attemptRef = doc(db, "students", studentId, "exams", examData.name);
+
+  await setDoc(attemptRef, {
+    examName: examData.name,
+    examId,
+    sessionToken,
+    correct: mcq.correct,
+    wrong: mcq.wrong,
+    blank: mcq.blank,
+    percent,
+    hasEssay,
+    essayTotalPoints,
+    totalExamPoints,
+    examGradingStatus: hasEssay ? "processing" : "graded",
+    answers: userAnswers,
+    finished: true,
+    submitTime: Date.now(),
+    ...extraFields
+  }, { merge: true });
+
+  // Create one "pending" essayResults stub per essay question. The
+  // Cloud Function Firestore trigger picks these up server-side and
+  // does the real grading — the browser never scores an essay itself
+  // and never sees an AI API key (rules #2/#3/#13).
+  for (const { question, index, answer } of essayList) {
+    const resultRef = doc(
+      db, "students", studentId, "exams", examData.name,
+      "essayResults", question.id || String(index)
+    );
+    try {
+      await setDoc(resultRef, {
+        questionId: question.id || String(index),
+        studentId,
+        examId,
+        examName: examData.name,
+        sessionToken,
+        studentAnswer: answer,
+        gradingStatus: "pending",
+        createdAt: Date.now()
+      }, { merge: true });
+    } catch (e) {
+      console.error("Failed to queue essay grading for", question.id, e);
+    }
+  }
+}
+
 /* ================= LOAD EXAM ================= */
 async function loadExam() {
 
@@ -1429,7 +1619,12 @@ async function loadExam() {
   }
 
   const qSnap = await getDocs(collection(db, "exams", examId, "questions"));
-  questions = qSnap.docs.map(d => d.data());
+  questions = qSnap.docs.map(d => {
+    const data = d.data();
+    return { id: d.id, ...data, type: data.type === "essay" ? "essay" : "mcq" };
+  });
+
+  restoreDraftIfAny();
 
   renderQuestion();
   renderSidebar();
@@ -1437,7 +1632,11 @@ async function loadExam() {
   startTimer(examData.time || 10);
 }
 
-loadExam();
+loadExam().catch((e) => {
+  console.log("loadExam error (probably offline):", e);
+});
+
+initNetworkMonitor();
 
 /* ================= FULLSCREEN START ================= */
 window.enableFullscreen = async function () {
@@ -1462,7 +1661,7 @@ document.addEventListener("fullscreenchange", () => {
   const exitWarn = document.getElementById("exitWarning");
 
   if (!document.fullscreenElement) {
-    lockExam();
+    if (!networkFixMode) lockExam();
     if (warn) warn.classList.remove("hidden");
     if (exitWarn) exitWarn.classList.remove("hidden");
   } else {
@@ -1675,23 +1874,69 @@ async function renderQuestion() {
   const box = document.getElementById("answersBox");
   box.innerHTML = "";
 
-  q.answers.forEach((a, i) => {
-    const el = document.createElement("div");
-    el.className = "answer";
-    if (userAnswers[current] === i) el.classList.add("selected");
+  if (q.type === "essay") {
+    renderEssayBox(box, q);
+  } else {
+    q.answers.forEach((a, i) => {
+      const el = document.createElement("div");
+      el.className = "answer";
+      if (userAnswers[current] === i) el.classList.add("selected");
 
-    el.innerHTML = `
-      <div class="answer-letter">${["أ","ب","ج","د"][i]}</div>
-      <div class="answer-text">${a}</div>
-    `;
+      el.innerHTML = `
+        <div class="answer-letter">${["أ","ب","ج","د"][i]}</div>
+        <div class="answer-text">${a}</div>
+      `;
 
-    el.onclick = () => selectAnswer(i);
+      el.onclick = () => selectAnswer(i);
 
-    box.appendChild(el);
+      box.appendChild(el);
 
-    setTimeout(() => el.classList.add("show"), i * 90);
+      setTimeout(() => el.classList.add("show"), i * 90);
+    });
+  }
+
+  renderSidebar();
+  updateProgress();
+}
+
+const ESSAY_MAX_CHARS = 3000;
+
+function renderEssayBox(box, q) {
+  const wrap = document.createElement("div");
+  wrap.className = "essay-answer-wrap";
+
+  const existing = userAnswers[current];
+  const savedText = (existing && typeof existing === "object") ? (existing.answer || "") : "";
+
+  wrap.innerHTML = `
+    <div class="essay-label">✍️ إجابتك</div>
+    <textarea id="essayInput" class="essay-textarea" dir="rtl"
+      maxlength="${ESSAY_MAX_CHARS}"
+      placeholder="اكتب إجابتك هنا...">${escapeHtml(savedText)}</textarea>
+    <div class="essay-counter" id="essayCounter">عدد الأحرف: ${savedText.length} / ${ESSAY_MAX_CHARS}</div>
+  `;
+
+  box.appendChild(wrap);
+
+  const ta = wrap.querySelector("#essayInput");
+  const counter = wrap.querySelector("#essayCounter");
+
+  ta.addEventListener("input", () => {
+    counter.innerText = `عدد الأحرف: ${ta.value.length} / ${ESSAY_MAX_CHARS}`;
+    counter.classList.toggle("limit", ta.value.length >= ESSAY_MAX_CHARS);
+    selectEssayAnswer(ta.value);
   });
+}
 
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+function selectEssayAnswer(text) {
+  userAnswers[current] = { type: "essay", answer: text };
+  saveDraft();
   renderSidebar();
   updateProgress();
 }
@@ -1703,6 +1948,7 @@ function selectAnswer(i) {
 
   userAnswers[current] = i;
 
+  saveDraft();
   renderSidebar();
   updateProgress();
 }
@@ -1842,31 +2088,12 @@ function showCheatingModal() {
 /* ================= CONFIRM ================= */
 window.confirmSubmit = async function () {
 
-  let correct = 0;
-  let wrong = 0;
-  let blank = 0;
-
-  questions.forEach((q, i) => {
-    if (userAnswers[i] === undefined) blank++;
-    else if (userAnswers[i] === q.correct) correct++;
-    else wrong++;
-  });
-
-  const percent = Math.round((correct / questions.length) * 100);
-
-  await setDoc(doc(db, "students", studentId, "exams", examData.name), {
-    examName: examData.name,
-    correct,
-    wrong,
-    blank,
-    percent,
-    answers: userAnswers,
-    finished: true,
-    submitTime: Date.now()
-  });
+  await submitExamAnswers();
 
   allowExit = true;
   clearInterval(timerInterval);
+  clearDraft();
+  localStorage.removeItem(netViolationKey);
 
   window.location.href = `result.html?student=${studentId}&exam=${examData.name}`;
 };
@@ -1876,32 +2103,12 @@ async function autoSubmitExam() {
   if (autoSubmitted) return;
   autoSubmitted = true;
 
-  let correct = 0;
-  let wrong = 0;
-  let blank = 0;
-
-  questions.forEach((q, i) => {
-    if (userAnswers[i] === undefined) blank++;
-    else if (userAnswers[i] === q.correct) correct++;
-    else wrong++;
-  });
-
-  const percent = Math.round((correct / questions.length) * 100);
-
-  await setDoc(doc(db, "students", studentId, "exams", examData.name), {
-    examName: examData.name,
-    correct,
-    wrong,
-    blank,
-    percent,
-    answers: userAnswers,
-    finished: true,
-    submitTime: Date.now(),
-    autoSubmitted: true
-  });
+  await submitExamAnswers({ autoSubmitted: true });
 
   allowExit = true;
   clearInterval(timerInterval);
+  clearDraft();
+  localStorage.removeItem(netViolationKey);
 
   window.location.href = `result.html?student=${studentId}&exam=${examData.name}`;
 }
@@ -1928,7 +2135,7 @@ window.confirmReloadSubmit = async function () {
 
 /* ================= BLOCK EXIT ================= */
 window.addEventListener("beforeunload", (e) => {
-  if (!allowExit) {
+  if (!allowExit && !disqualifying) {
     autoSubmitExam();
     e.preventDefault();
     e.returnValue = "";
@@ -1942,22 +2149,194 @@ document.addEventListener("DOMContentLoaded", () => {
 
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") {
+    if (networkFixMode) return; // مسموح - بيصلح مشكلة الشبكة
     violationDetected = true;
   }
 });
 
 window.addEventListener("pagehide", () => {
-  if (!allowExit) {
+  if (!allowExit && !disqualifying) {
     autoSubmitExam();
   }
 });
 
 window.addEventListener("focus", () => {
+  if (networkFixMode) return; // مسموح - بيصلح مشكلة الشبكة
   if (violationDetected) {
     showCheatingModal();
     violationDetected = false;
   }
 });
+
+/* ================= NETWORK QUALITY + ONE-TIME DISCONNECT ALLOWANCE ================= */
+
+function initNetworkMonitor() {
+  updateNetBadge(isOffline ? "offline" : "checking", isOffline ? "غير متصل" : "جاري الفحص...");
+
+  window.addEventListener("online", handleOnline);
+  window.addEventListener("offline", handleOffline);
+
+  if (navigator.connection && navigator.connection.addEventListener) {
+    navigator.connection.addEventListener("change", measureConnectionQuality);
+  }
+
+  measureConnectionQuality();
+  netCheckInterval = setInterval(measureConnectionQuality, 8000);
+
+  if (isOffline) {
+    handleOffline();
+  }
+}
+
+function updateNetBadge(status, label) {
+  const badge = document.getElementById("netBadge");
+  const dot = document.getElementById("netDot");
+  const lbl = document.getElementById("netLabel");
+  if (!dot || !lbl) return;
+
+  dot.className = "net-dot" + (status ? " net-" + status : "");
+  lbl.innerText = label;
+
+  if (badge) badge.classList.toggle("net-badge-offline", status === "offline");
+}
+
+async function measureConnectionQuality() {
+  if (!navigator.onLine) {
+    updateNetBadge("offline", "غير متصل");
+    return;
+  }
+
+  try {
+    const start = performance.now();
+    await fetch("https://www.gstatic.com/generate_204", { mode: "no-cors", cache: "no-store" });
+    const latency = performance.now() - start;
+
+    if (latency < 250) updateNetBadge("good", "ممتاز");
+    else if (latency < 700) updateNetBadge("mid", "جيد");
+    else updateNetBadge("weak", "ضعيف");
+  } catch (e) {
+    updateNetBadge("weak", "ضعيف");
+  }
+}
+
+function handleOffline() {
+  if (isOffline && document.getElementById("offlineOverlay")) return;
+  isOffline = true;
+  updateNetBadge("offline", "غير متصل");
+
+  if (disqualifying) return; // already forfeited, just wait for reconnection
+
+  netViolations++;
+  localStorage.setItem(netViolationKey, String(netViolations));
+
+  clearInterval(timerInterval);
+
+  if (navigator.vibrate) {
+    try { navigator.vibrate([120, 60, 120]); } catch (e) {}
+  }
+
+  if (netViolations >= 2) {
+    startDisqualification();
+    return;
+  }
+
+  networkFixMode = true;
+  showOfflineOverlay(false);
+}
+
+function handleOnline() {
+  measureConnectionQuality();
+
+  if (disqualifying) {
+    finalizeDisqualification();
+    return;
+  }
+
+  if (!isOffline) return;
+  isOffline = false;
+
+  hideOfflineOverlay();
+  showToast("✅ تم استعادة الاتصال بالإنترنت، يمكنك المتابعة");
+
+  if (!timerInterval && totalSeconds > 0) {
+    timerInterval = setInterval(() => {
+      totalSeconds--;
+      updateTimer();
+      timerWarning();
+      if (totalSeconds <= 0) {
+        clearInterval(timerInterval);
+        timeFinishedPopup();
+      }
+    }, 1000);
+  }
+
+  setTimeout(() => { networkFixMode = false; }, 4000);
+
+  if (!document.fullscreenElement) {
+    lockExam();
+  }
+}
+
+function showOfflineOverlay(disqualified) {
+  hideOfflineOverlay();
+
+  const overlay = document.createElement("div");
+  overlay.id = "offlineOverlay";
+  overlay.className = "modal-overlay";
+
+  if (disqualified) {
+    overlay.innerHTML = `
+      <div class="modal-box glass" style="border:2px solid var(--danger)">
+        <div class="status-icon danger">🚫</div>
+        <h3 style="-webkit-text-fill-color:var(--danger); color:var(--danger);">انقطع الاتصال مرة أخرى</h3>
+        <p>لقد استخدمت فرصتك الوحيدة لإصلاح الشبكة، وبما أن الاتصال انقطع مرة ثانية يُعتبر الامتحان خاسرًا تلقائيًا.<br>سيتم تسجيل إجاباتك الحالية فور عودة الاتصال.</p>
+        <p class="warn-text" id="reconnectStatus">📡 في انتظار عودة الاتصال...</p>
+      </div>`;
+  } else {
+    overlay.innerHTML = `
+      <div class="modal-box glass" style="border:2px solid var(--a1)">
+        <div class="status-icon warn">📡</div>
+        <h3>انقطع الاتصال بالإنترنت</h3>
+        <p>يمكنك الخروج من وضع ملء الشاشة الآن لإصلاح مشكلة الشبكة — <b>هذه فرصتك الوحيدة</b> في هذا الامتحان.<br>الوقت متوقف مؤقتًا، وإذا انقطع الاتصال مرة أخرى سيضيع عليك الامتحان تلقائيًا.</p>
+        <p class="warn-text">جاري إعادة المحاولة تلقائيًا كل بضع ثوانٍ...</p>
+      </div>`;
+  }
+
+  document.body.appendChild(overlay);
+}
+
+function hideOfflineOverlay() {
+  const overlay = document.getElementById("offlineOverlay");
+  if (overlay) overlay.remove();
+}
+
+function startDisqualification() {
+  disqualifying = true;
+  networkFixMode = false;
+  showOfflineOverlay(true);
+  showToast("🚫 تم فقد الامتحان بسبب انقطاع الاتصال مرتين");
+}
+
+async function finalizeDisqualification() {
+  if (!examData || !examData.name) {
+    setTimeout(finalizeDisqualification, 800);
+    return;
+  }
+
+  try {
+    await submitExamAnswers({
+      disqualified: true,
+      disqualifyReason: "network_disconnect_twice"
+    });
+  } catch (e) {
+    console.log("finalizeDisqualification error:", e);
+  }
+
+  allowExit = true;
+  clearInterval(timerInterval);
+  clearDraft();
+  window.location.href = `result.html?student=${studentId}&exam=${examData.name}`;
+}
 
 /* ================= TIME FINISHED ================= */
 function timeFinishedPopup() {
