@@ -2349,16 +2349,16 @@ box-shadow:0 0 35px rgba(100,116,139,.35);
     <div class="card-glow"></div>
 
     <div class="card-icon">
-        ✅
+        🏆
     </div>
 
     <div class="card-title">
-        الصح ✅
+        الدرجات المكتسبة
     </div>
 
-    <span id="correct">0</span>
+    <span id="earnedPoints">0</span>
 
-    <small>Correct Answers</small>
+    <small id="earnedPointsOutOf">Points Earned</small>
 
 </div>
 
@@ -2367,16 +2367,16 @@ box-shadow:0 0 35px rgba(100,116,139,.35);
     <div class="card-glow"></div>
 
     <div class="card-icon">
-        ❌
+        📉
     </div>
 
     <div class="card-title">
-        الغلط ❌
+        الدرجات الناقصة
     </div>
 
-    <span id="wrong">0</span>
+    <span id="missingPoints">0</span>
 
-    <small>Wrong Answers</small>
+    <small>Points Lost</small>
 
 </div>
 
@@ -2590,8 +2590,8 @@ async function loadResult(){
     const gradingDone = !hasEssay || (result.percent !== null && result.percent !== undefined);
 
     const percent = hasEssay
-      ? (gradingDone ? (result.percent ?? 0) : null)
-      : (result.percent || 0);
+      ? (gradingDone ? Math.min(100, Math.max(0, result.percent ?? 0)) : null)
+      : Math.min(100, Math.max(0, result.percent || 0));
 
 const correct = result.correct || 0;
 
@@ -2599,18 +2599,39 @@ const wrong = result.wrong || 0;
 
 const blank = result.blank || 0;
 
-/* NOTE: totalQ is intentionally NOT computed as correct+wrong+blank.
-   Since essay questions were added, that sum no longer represents the
-   real number of questions in the exam. The real total is filled in
-   further below, right after the questions are fetched from
-   Firestore (qSnap.size), and animateCounter("totalQ", ...) is
-   called there instead. */
+/* ================= درجات (مش عدد أسئلة) =================
+   كل سؤال اختياري له درجته الخاصة (مش نقطة ثابتة)، والمقالي بيتصحح
+   بدرجته الكاملة برضه — فبدل ما نعرض "عدد الصح/الغلط" (اللي بيبقى
+   مضلِّل لو الأسئلة درجاتها مختلفة)، بنعرض الدرجات المكتسبة والناقصة
+   فعليًا. للامتحانات القديمة اللي اتعملت قبل إضافة درجة لكل سؤال، بنرجع
+   لنفس الحساب القديم (كل سؤال بدرجة واحدة) عشان محدش نتيجته تتغير. */
+const mcqEarnedPointsRaw = result.mcqEarnedPoints ?? correct;
+const mcqTotalPoints = result.mcqTotalPoints ?? (correct + wrong + blank);
+const mcqEarnedPoints = Math.min(mcqEarnedPointsRaw, mcqTotalPoints);
+const essayTotalPoints = result.essayTotalPoints ?? 0;
+// حماية إضافية: أي درجة مقالي مسجّلة متتجاوزش الدرجة الكلية بتاعتها،
+// مهما كانت القيمة المخزنة في Firestore (بيانات قديمة/شاذة مثلًا).
+const essayEarnedPoints = Math.min(result.essayEarnedPoints ?? 0, essayTotalPoints || Infinity);
+
+const totalExamPoints = result.totalExamPoints ?? (mcqTotalPoints + essayTotalPoints);
+const totalEarnedPointsRaw = result.totalEarnedPoints ?? (mcqEarnedPoints + essayEarnedPoints);
+const totalEarnedPoints = Math.max(0, Math.min(totalEarnedPointsRaw, totalExamPoints));
+const missingPoints = Math.max(0, totalExamPoints - totalEarnedPoints);
+
+// عدد الأسئلة (اختياري + مقالي مع بعض) — مش درجات، ده العدد الحقيقي
+// لكل أسئلة الامتحان، بعد ما كان بيفوّت السؤال المقالي بالغلط.
+const mcqQuestionCount = correct + wrong + blank;
+const total = mcqQuestionCount + essayResultsList.length;
 
 const pendingBanner = document.getElementById("pendingFinalBanner");
 
 if (hasEssay && !gradingDone) {
   animateCounter("percent", 0, "%");
   document.getElementById("percent").innerText = "…";
+  document.getElementById("earnedPoints").innerText = "…";
+  document.getElementById("missingPoints").innerText = "…";
+  const outOfEl = document.getElementById("earnedPointsOutOf");
+  if (outOfEl) outOfEl.innerText = "Points Earned";
   if (pendingBanner) {
     pendingBanner.style.display = "flex";
     pendingBanner.querySelector(".pf-icon").innerText = anyAwaitingManual ? "🧑‍🏫" : "🤖";
@@ -2620,14 +2641,16 @@ if (hasEssay && !gradingDone) {
   }
 } else {
   animateCounter("percent", percent || 0, "%");
+  animateCounter("earnedPoints", totalEarnedPoints);
+  animateCounter("missingPoints", missingPoints);
+  const outOfEl = document.getElementById("earnedPointsOutOf");
+  if (outOfEl) outOfEl.innerText = `من أصل ${totalExamPoints} درجة`;
   if (pendingBanner) pendingBanner.style.display = "none";
 }
 
-animateCounter("correct", correct);
-
-animateCounter("wrong", wrong);
-
 animateCounter("blankQ", blank);
+
+animateCounter("totalQ", total);
 
 updateBadge(hasEssay && !gradingDone ? 0 : (percent || 0));
 
@@ -2639,16 +2662,24 @@ updateBadge(hasEssay && !gradingDone ? 0 : (percent || 0));
       },300);
     }
 
-    /* ================= LIVE UPDATE WHILE ESSAYS ARE GRADING =================
+    /* ================= LIVE UPDATE WHILE / AFTER ESSAYS ARE GRADED =================
        rule #50: poll safely via a Firestore listener instead of a fake
-       progress bar — once the backend finishes grading, this listener
-       re-runs loadResult() so the final percentage appears automatically. */
-    if (hasEssay && !gradingDone && !window.__resultListenerAttached) {
+       progress bar. We keep listening even after gradingDone becomes
+       true (not just while pending) so that if the teacher later edits
+       an already-approved grade, the student's page updates instantly
+       too — without needing a refresh. We only re-render when the
+       percent actually changes, so the very first snapshot (which just
+       confirms the state we already rendered) doesn't cause a loop. */
+    if (hasEssay && !window.__resultListenerAttached) {
       window.__resultListenerAttached = true;
+      window.__lastKnownPercent = result.percent ?? null;
       const attemptRef = doc(db, "students", studentId, "exams", examName);
       onSnapshot(attemptRef, snap => {
         const d = snap.data();
-        if (d && d.percent !== null && d.percent !== undefined) {
+        if (!d) return;
+        const newPercent = d.percent ?? null;
+        if (newPercent !== window.__lastKnownPercent) {
+          window.__lastKnownPercent = newPercent;
           loadResult();
         }
       });
@@ -2697,55 +2728,27 @@ updateBadge(hasEssay && !gradingDone ? 0 : (percent || 0));
       collection(db,"exams",examDoc.id,"questions")
     );
 
-    /* ---- REAL total questions count (fix) ----
-       This is now the single source of truth for "totalQ" — it counts
-       every question document that actually exists in Firestore for
-       this exam (MCQ, essay, or any future type), instead of relying
-       on correct + wrong + blank, which never accounted for essay
-       questions. */
-    const totalQuestions = qSnap.size;
-    const essayQuestions = qSnap.docs.filter(
-      d => d.data().type === "essay"
-    ).length;
-    const mcqQuestions = totalQuestions - essayQuestions;
-
-    animateCounter("totalQ", totalQuestions);
-
     // essayResultsMap was already fetched earlier (used for the pending
     // banner above) — reused here for the per-question breakdown cards.
 
     const container = document.getElementById("questions");
     container.innerHTML = "";
 
-    /* ---- Ordering (fix) ----
-       Firestore document order from qSnap.forEach is not guaranteed to
-       match the order the exam was taken in / the order "answers[i]"
-       was saved in. If the questions have an explicit "order" field,
-       sort by it so it lines up correctly with the saved answers. If
-       there's no "order" field, fall back to the existing behaviour
-       (natural qSnap order) — no new storage scheme is invented. */
-    const hasOrderField = qSnap.docs.some(d => d.data().order !== undefined);
-    const questions = qSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-    if (hasOrderField) {
-      questions.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-    }
-
     let i = 0;
 
-    questions.forEach(q=>{
+    qSnap.forEach(docSnap=>{
 
-      const docId = q.id;
+      const q = docSnap.data();
       const userAnswer = answers[i];
-      const hasAnswer = userAnswer !== undefined && userAnswer !== null;
 
       if (q.type === "essay") {
-        renderEssayCard(container, q, docId, essayResultsMap[docId], i);
+        renderEssayCard(container, q, docSnap.id, essayResultsMap[docSnap.id], i);
         i++;
         return;
       }
 
       const card = document.createElement("div");
-      if(!hasAnswer){
+      if(userAnswer === undefined){
     card.className = "q-card blank";
 }
 else if(userAnswer === q.correct){
@@ -2761,34 +2764,10 @@ else{
         let cls = "answer";
 
         if(idx === q.correct) cls += " correct";
-        if(hasAnswer && userAnswer === idx && userAnswer !== q.correct) cls += " wrong";
+        if(userAnswer === idx && userAnswer !== q.correct) cls += " wrong";
 
         return `<div class="${cls}">${a}</div>`;
       }).join("");
-
-      /* ================= QUESTION STATE (fix) =================
-         Three clear, distinct states — an unanswered question must
-         never be shown as "✖ خاطئة" (wrong). */
-      let questionStateHTML = "";
-      if (!hasAnswer) {
-        questionStateHTML = `
-          <div class="question-state blank">
-            📭 لم تُجب
-          </div>
-        `;
-      } else if (userAnswer === q.correct) {
-        questionStateHTML = `
-          <div class="question-state success">
-            ✔ صحيحة
-          </div>
-        `;
-      } else {
-        questionStateHTML = `
-          <div class="question-state danger">
-            ✖ خاطئة
-          </div>
-        `;
-      }
 
       /* ================= CARD ================= */
       card.innerHTML = `
@@ -2796,10 +2775,26 @@ else{
 <div class="q-header">
 
     <div class="question-number">
-        السؤال ${i + 1}
+        السؤال ${i + 1} <span style="opacity:.7;font-size:12px;">(${q.points ?? 1} درجة)</span>
     </div>
 
-    ${questionStateHTML}
+    <div class="${
+        userAnswer===q.correct
+        ?
+        "question-state success"
+        :
+        "question-state danger"
+    }">
+
+        ${
+        userAnswer===q.correct
+        ?
+        "✔ صحيحة"
+        :
+        "✖ خاطئة"
+        }
+
+    </div>
 
 </div>
 
@@ -2816,11 +2811,11 @@ ${q.text || "سؤال"}
 ${answersHTML}
 
 <div class="answer ${
-!hasAnswer
+userAnswer===q.correct
 ?
-""
+"correct"
 :
-(userAnswer===q.correct ? "correct" : "wrong")
+"wrong"
 }">
 
 <b>إجابتك</b>
@@ -2828,11 +2823,11 @@ ${answersHTML}
 <br>
 
 ${
-hasAnswer
+userAnswer!==undefined
 ?
-(q.answers && q.answers[userAnswer] !== undefined ? q.answers[userAnswer] : "معملتش إجابة 🤷")
+q.answers[userAnswer]
 :
-"معملتش إجابة 🤷"
+"معملتش إجابة"
 }
 
 </div>
@@ -2969,4 +2964,4 @@ loadResult();
 </script>
 
 </body>
-  </html>
+</html>
